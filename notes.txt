@@ -1,0 +1,25 @@
+Receive airplane info
+
+Needed stuff (the day github dies, we are screwed...):
+- uhd/usrp usual stuff
+- SoapySDR: https://github.com/pothosware/SoapySDR.git
+- SoapyUHD: https://github.com/pothosware/SoapyUHD.git
+- rx-tools: https://github.com/rxseger/rx_tools.git
+- dump1090: https://github.com/antirez/dump1090.git
+
+To compile with cmake:
+cmake -DCMAKE_INSTALL_PREFIX:PATH=/home/sed/uhd/install -DSOAPY_SDR_ROOT=/home/sed/uhd/install ..
+
+To access b210 without being root, do
+as root: chmod 666 /dev/bus/usb/XXX/YYY twice, once when you plug the
+         b210, then again on the new XXX/YYY. Use
+         "strace uhd_usrp_probe 2>&1 | grep open" to find XXX and YYY.
+
+get data from planes/helicopters (maybe play with gain value -g):
+../rx_tools/rx_sdr -d uhd -f 1090000000 -s 2000000 - -g 100 | ./dump1090 --ifile - --interactive --metric --aggressive --net
+
+
+For rtlsdr
+
+../rx_tools/rx_sdr -d rtlsdr -f 1090000000 -s 2000000 - -g 100 |./dump1090 --ifile - --interactive --metric --aggressive --net
+
