@@ -4,19 +4,23 @@ import numpy as np
 import pyModeS as pms
 import sys
 
-sampling_rate = 2e6
-smaples_per_microsec = 2
+osr = 1             # real sample rate = osr * sampling_rate
+sampling_rate = 2e6 * osr
+samples_per_microsec = 2 * osr
 
 modes_frequency = 1090e6
-buffer_size = 1024 * 200
-read_size = 1024 * 100
-buffer_size = buffer_size * 2
-read_size = read_size * 2
+buffer_size = 1024 * 200 * osr
+read_size = 1024 * 100 * osr
+#buffer_size = buffer_size * 2
+#read_size = read_size * 2
 
 pbits = 8
 fbits = 112
-preamble = [1, 0, 1, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0]
-th_amp_diff = 0.8  # signal amplitude threshold difference between 0 and 1 bit
+_preamble = [1, 0, 1, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0]
+preamble = []
+for x in _preamble:
+    preamble.extend([x] * osr)
+th_amp_diff = 0.8   # signal amplitude threshold difference between 0 and 1 bit
 
 # convert a byte array to a complex64 numpy array
 def iqtocomplex(iqdata):
@@ -55,7 +59,7 @@ class SDRFileReader(object):
 
     def _calc_noise(self):
         """Calculate noise floor"""
-        window = smaples_per_microsec * 100
+        window = samples_per_microsec * 100
         total_len = len(self.signal_buffer)
         means = (
             np.array(self.signal_buffer[: total_len // window * window])
@@ -84,7 +88,7 @@ class SDRFileReader(object):
                 i += 1
                 continue
 
-            if self._check_preamble(self.signal_buffer[i : i + pbits * 2]):
+            if self._check_preamble(self.signal_buffer[i : i + pbits * 2 * osr]):
                 frame_start = i + pbits * 2
                 frame_end = i + pbits * 2 + (fbits + 1) * 2
                 frame_length = (fbits + 1) * 2
@@ -166,19 +170,19 @@ class SDRFileReader(object):
         df = pms.df(msg)
         msglen = len(msg)
         if df == 17 and msglen == 28:
-            print(msg, pms.icao(msg), pms.crc(msg))
+            print(self.frames, ":", msg, pms.icao(msg), pms.crc(msg))
         elif df in [20, 21] and msglen == 28:
-            print(msg, pms.icao(msg))
+            print(self.frames, ":", msg, pms.icao(msg))
         elif df in [4, 5, 11] and msglen == 14:
-            print(msg, pms.icao(msg))
+            print(self.frames, ":", msg, pms.icao(msg))
         else:
             print("[*]", msg, "df={}, mesglen={}".format(df, msglen))
             pass
 
     def _read_callback(self, iqdata, rtlsdr_obj):
-        cdata = iqtocomplex(iqdata)
-        # scale them to be in range [-1,1)
-        amp = np.absolute((cdata - complex(127,127)) / 128)
+        # scale to be in range [-1,1)
+        cdata = (iqtocomplex(iqdata) - complex(127, 127)) / 128
+        amp = np.absolute(cdata)
         self.signal_buffer.extend(amp.tolist())
         self.iq_buffer.extend(cdata.tolist())
 
