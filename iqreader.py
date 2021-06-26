@@ -89,24 +89,24 @@ class SDRFileReader(object):
                 continue
 
             if self._check_preamble(self.signal_buffer[i : i + pbits * 2 * osr]):
-                frame_start = i + pbits * 2
-                frame_end = i + pbits * 2 + (fbits + 1) * 2
-                frame_length = (fbits + 1) * 2
+                frame_start = i + pbits * 2 * osr
+                frame_end = i + (pbits + (fbits + 1)) * 2 * osr
+                frame_length = (fbits + 1) * 2 * osr
                 frame_pulses = self.signal_buffer[frame_start:frame_end]
 
                 threshold = max(frame_pulses) * 0.2
 
                 msgbin = []
-                for j in range(0, frame_length, 2):
-                    p2 = frame_pulses[j : j + 2]
-                    if len(p2) < 2:
+                for j in range(0, frame_length, 2 * osr):
+                    p2 = frame_pulses[j : j + 2 * osr]
+                    if len(p2) < 2 * osr:
                         break
 
-                    if p2[0] < threshold and p2[1] < threshold:
+                    if max(p2[0:osr]) < threshold and max(p2[osr:]) < threshold:
                         break
-                    elif p2[0] >= p2[1]:
+                    elif min(p2[0:osr]) >= max(p2[osr:]):
                         c = 1
-                    elif p2[0] < p2[1]:
+                    elif max(p2[0:osr]) < min(p2[osr:]):
                         c = 0
                     else:
                         msgbin = []
