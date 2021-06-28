@@ -3,6 +3,7 @@ import traceback
 import numpy as np
 import pyModeS as pms
 import sys
+from datetime import datetime
 
 
 modes_frequency = 1090e6
@@ -155,7 +156,14 @@ class SDRFileReader(object):
         return iq
 
     def _saveiq(self, frame):
-        fs = open('{}-{}.iq'.format(self.ofile, self.frames), 'wb')
+        # append info to index file
+        fname = '{}-{}.iq'.format(self.ofile, self.frames)
+        ft = open('{}-index.txt'.format(self.ofile), 'a')
+        ft.write('({},{},{})\n'.format(
+                 fname, datetime.now(), self.noise_floor))
+        ft.close()
+        # write binary iq samples
+        fs = open(fname, 'wb')
         fs.write(frame)
         fs.close()
 
