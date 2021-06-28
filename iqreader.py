@@ -7,10 +7,11 @@ import sys
 
 modes_frequency = 1090e6
 
-def replicate(_r, times):
+# Returns a np.array with each element of _r replicated times times
+def replicate(a, c):
     r = []
-    for x in _r:
-        r.extend([x] * times)
+    for x in a:
+        r.extend([x] * c)
     return np.array(r)
 
 pbits = 8
