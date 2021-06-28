@@ -158,7 +158,7 @@ class SDRFileReader(object):
     def _saveiq(self, frame):
         # append info to index file
         fname = '{}-{}.iq'.format(self.ofile, self.frames)
-        ft = open('{}-index.txt'.format(self.ofile), 'a')
+        ft = open('{}-iqindex.txt'.format(self.ofile), 'a')
         ft.write('({},{},{})\n'.format(
                  fname, datetime.now(), self.noise_floor))
         ft.close()
