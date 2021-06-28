@@ -19,24 +19,11 @@ fbits = 112
 preamble = [1, 0, 1, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0]
 th_amp_diff = 0.8   # signal amplitude threshold difference between 0 and 1 bit
 
-# convert a byte array to a complex64 numpy array
-def iqtocomplex(iqdata):
-    rdata = np.frombuffer(iqdata, dtype=np.uint8).astype(np.float32)
-    cdata = rdata.view(np.complex64)
-    cdata = (cdata - complex(127, 127)) / 128
-    return cdata
-
-# convert a complex64 numpy array to a byte array
-def complextoiq(cdata):
-    rdata = cdata.view(np.float64) * 128 + 127
-    iq = rdata.astype(np.uint8)
-    return iq
-
 class SDRFileReader(object):
     def __init__(self, **kwargs):
         super(SDRFileReader, self).__init__()
         self.signal_buffer = []  # amplitude of the sample only
-        self.iq_buffer = []  # iq samples
+        self.ciq_buffer = []  # iq samples
 
         # command line args
         self.debug = kwargs.get("debug", False)
@@ -100,7 +87,7 @@ class SDRFileReader(object):
                 i += 1
                 continue
 
-            if self._check_preamble(self.signal_buffer[i : i + pbits * 2 * osr]):
+            if self._check_preamble(self.signal_buffer[i:i + pbits * 2 * osr]):
                 frame_start = i + pbits * 2 * osr
                 frame_end = i + (pbits + (fbits + 1)) * 2 * osr
                 frame_length = (fbits + 1) * 2 * osr
@@ -135,7 +122,7 @@ class SDRFileReader(object):
                         self.frames = self.frames + 1
                         messages.append([msghex, time.time()])
                         if self.ofile is not None:
-                            self._saveiq(complextoiq(np.array(self.iq_buffer)))
+                            self._saveiq(self._complextoiq(self.ciq_buffer))
 
                     if self.debug:
                         self._debug_msg(msghex)
@@ -148,9 +135,24 @@ class SDRFileReader(object):
 
         # reset the buffer
         self.signal_buffer = self.signal_buffer[i:]
-        self.iq_buffer = self.iq_buffer[i:]
+        self.ciq_buffer = self.ciq_buffer[i:]
 
         return messages
+
+    # convert a byte array to a complex64 numpy array
+    @staticmethod
+    def _iqtocomplex(iqdata):
+        rdata = np.frombuffer(iqdata, dtype=np.uint8).astype(np.float32)
+        cdata = rdata.view(np.complex64)
+        cdata = (cdata - complex(127, 127)) / 128
+        return cdata
+
+    # convert a complex64 numpy array to a byte array
+    @staticmethod
+    def _complextoiq(cdata):
+        rdata = np.array(cdata).view(np.float64) * 128 + 127
+        iq = rdata.astype(np.uint8)
+        return iq
 
     def _saveiq(self, frame):
         fs = open('{}-{}.iq'.format(self.ofile, self.frames), 'wb')
@@ -193,12 +195,12 @@ class SDRFileReader(object):
 
     def _read_callback(self, iqdata, rtlsdr_obj):
         # scale to be in range [-1,1)
-        cdata = iqtocomplex(iqdata)
+        cdata = self._iqtocomplex(iqdata)
         if self.upsample > 1:
             cdata = replicate(cdata, self.upsample)
         amp = np.absolute(cdata)
         self.signal_buffer.extend(amp.tolist())
-        self.iq_buffer.extend(cdata.tolist())
+        self.ciq_buffer.extend(cdata.tolist())
 
         if len(self.signal_buffer) >= self.buffer_size:
             messages = self._process_buffer()
