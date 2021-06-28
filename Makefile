@@ -14,4 +14,4 @@ run_dump1090:
 	../sdr/rx_tools/rx_sdr -d rtlsdr -f 1090000000 -s 2000000 - -g 100 |~/bin/dump1090 --ifile - --metric --aggressive --net
 
 clean:
-	-rm -f *.iq
+	-rm -f *.iq *-iqindex.txt
