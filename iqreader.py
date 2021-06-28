@@ -14,23 +14,28 @@ read_size = 1024 * 100 * osr
 #buffer_size = buffer_size * 2
 #read_size = read_size * 2
 
+def replicate(_r, times):
+    r = []
+    for x in _r:
+        r.extend([x] * times)
+    return np.array(r)
+
 pbits = 8
 fbits = 112
 _preamble = [1, 0, 1, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0]
-preamble = []
-for x in _preamble:
-    preamble.extend([x] * osr)
+preamble = replicate(_preamble, osr)
 th_amp_diff = 0.8   # signal amplitude threshold difference between 0 and 1 bit
 
 # convert a byte array to a complex64 numpy array
 def iqtocomplex(iqdata):
     rdata = np.frombuffer(iqdata, dtype=np.uint8).astype(np.float32)
     cdata = rdata.view(np.complex64)
+    cdata = (cdata - complex(127, 127)) / 128
     return cdata
 
 # convert a complex64 numpy array to a byte array
 def complextoiq(cdata):
-    rdata = cdata.view(np.float64)
+    rdata = cdata.view(np.float64) * 128 + 127
     iq = rdata.astype(np.uint8)
     return iq
 
@@ -39,16 +44,19 @@ class SDRFileReader(object):
         super(SDRFileReader, self).__init__()
         self.signal_buffer = []  # amplitude of the sample only
         self.iq_buffer = []  # iq samples
-        self.fname = kwargs.get('fname', '/dev/null')
 
-        if self.fname == '-':
+        # command line args
+        self.args = kwargs.get('args')
+        self.upsample = args.upsample
+
+        self.ofile = self.args.ofile
+        self.ifile = self.args.ifile
+        if self.ifile == '-':
             self.fd = open(0, 'rb')
         else:
-            self.fd = open(self.fname, 'rb')
+            self.fd = open(self.ifile, 'rb')
 
 
-        self.iqfname = 'iqframe'
-        self.write = self.fname = kwargs.get('wflag')
         self.frames = 0
         self.debug = kwargs.get("debug", False)
         self.raw_pipe_in = None
@@ -121,7 +129,7 @@ class SDRFileReader(object):
                     msghex = pms.bin2hex("".join([str(i) for i in msgbin]))
                     if self._check_msg(msghex):
                         messages.append([msghex, time.time()])
-                        if self.write:
+                        if self.ofile is not None:
                             self._saveiq(complextoiq(np.array(self.iq_buffer)))
 
                     if self.debug:
@@ -140,16 +148,16 @@ class SDRFileReader(object):
         return messages
 
     def _saveiq(self, frame):
-        fs = open('{}-{}.iq'.format(self.iqfname, self.frames), 'wb')
+        fs = open('{}-{}.iq'.format(self.ofile, self.frames), 'wb')
         fs.write(frame)
         fs.close()
         self.frames = self.frames + 1
 
     def _check_preamble(self, pulses):
-        if len(pulses) != 16:
+        if len(pulses) != len(preamble):
             return False
 
-        for i in range(16):
+        for i in range(len(preamble)):
             if abs(pulses[i] - preamble[i]) > th_amp_diff:
                 return False
 
@@ -181,7 +189,9 @@ class SDRFileReader(object):
 
     def _read_callback(self, iqdata, rtlsdr_obj):
         # scale to be in range [-1,1)
-        cdata = (iqtocomplex(iqdata) - complex(127, 127)) / 128
+        cdata = iqtocomplex(iqdata)
+        if self.upsample > 1:
+            cdata = replicate(cdata, self.upsample)
         amp = np.absolute(cdata)
         self.signal_buffer.extend(amp.tolist())
         self.iq_buffer.extend(cdata.tolist())
@@ -219,12 +229,13 @@ if __name__ == "__main__":
 
     # parse command line
     parser = argparse.ArgumentParser()
-    parser.add_argument('fname', metavar='fname', type=str, help='Input file name')
-    parser.add_argument('-w', '--write', action='store_true', help='Write files')
+    parser.add_argument('ifile', type=str, help='Input file name')
+    parser.add_argument('-o', '--ofile', action='store', default=None, help='Output file prefix')
+    parser.add_argument('-u', '--upsample', type=int, default=1, help='Upsample factor files')
     args = parser.parse_args()
 
     # create SDR object
-    rtl = SDRFileReader(fname=args.fname, wflag=args.write)
+    rtl = SDRFileReader(args = args)
 
     signal.signal(signal.SIGINT, rtl.stop)
 
