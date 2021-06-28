@@ -128,6 +128,7 @@ class SDRFileReader(object):
                 if len(msgbin) > 0:
                     msghex = pms.bin2hex("".join([str(i) for i in msgbin]))
                     if self._check_msg(msghex):
+                        self.frames = self.frames + 1
                         messages.append([msghex, time.time()])
                         if self.ofile is not None:
                             self._saveiq(complextoiq(np.array(self.iq_buffer)))
@@ -151,7 +152,6 @@ class SDRFileReader(object):
         fs = open('{}-{}.iq'.format(self.ofile, self.frames), 'wb')
         fs.write(frame)
         fs.close()
-        self.frames = self.frames + 1
 
     def _check_preamble(self, pulses):
         if len(pulses) != len(preamble):
