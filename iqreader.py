@@ -4,15 +4,8 @@ import numpy as np
 import pyModeS as pms
 import sys
 
-osr = 1             # real sample rate = osr * sampling_rate
-sampling_rate = 2e6 * osr
-samples_per_microsec = 2 * osr
 
 modes_frequency = 1090e6
-buffer_size = 1024 * 200 * osr
-read_size = 1024 * 100 * osr
-#buffer_size = buffer_size * 2
-#read_size = read_size * 2
 
 def replicate(_r, times):
     r = []
@@ -22,8 +15,7 @@ def replicate(_r, times):
 
 pbits = 8
 fbits = 112
-_preamble = [1, 0, 1, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0]
-preamble = replicate(_preamble, osr)
+preamble = [1, 0, 1, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0]
 th_amp_diff = 0.8   # signal amplitude threshold difference between 0 and 1 bit
 
 # convert a byte array to a complex64 numpy array
@@ -46,8 +38,10 @@ class SDRFileReader(object):
         self.iq_buffer = []  # iq samples
 
         # command line args
+        self.debug = kwargs.get("debug", False)
         self.args = kwargs.get('args')
         self.upsample = args.upsample
+        self.osr = args.osr
 
         self.ofile = self.args.ofile
         self.ifile = self.args.ifile
@@ -56,18 +50,24 @@ class SDRFileReader(object):
         else:
             self.fd = open(self.ifile, 'rb')
 
-
+        # member variables
         self.frames = 0
-        self.debug = kwargs.get("debug", False)
         self.raw_pipe_in = None
         self.stop_flag = False
         self.noise_floor = 1e6
+        self.preamble = replicate(preamble, self.osr)
+
+        # sample related parameters
+        self.sampling_rate = 2e6 * self.osr
+        self.samples_per_microsec = 2 * self.osr
+        self.buffer_size = 1024 * 200 * self.osr
+        self.read_size = 1024 * 100 * self.osr
 
         self.exception_queue = None
 
     def _calc_noise(self):
         """Calculate noise floor"""
-        window = samples_per_microsec * 100
+        window = self.samples_per_microsec * 100
         total_len = len(self.signal_buffer)
         means = (
             np.array(self.signal_buffer[: total_len // window * window])
@@ -78,6 +78,9 @@ class SDRFileReader(object):
 
     def _process_buffer(self):
         """process raw IQ data in the buffer"""
+
+        # oversampling rate is the rate above the minimum 2 MHz one
+        osr = self.osr
 
         # update noise floor
         self.noise_floor = min(self._calc_noise(), self.noise_floor)
@@ -154,11 +157,11 @@ class SDRFileReader(object):
         fs.close()
 
     def _check_preamble(self, pulses):
-        if len(pulses) != len(preamble):
+        if len(pulses) != len(self.preamble):
             return False
 
-        for i in range(len(preamble)):
-            if abs(pulses[i] - preamble[i]) > th_amp_diff:
+        for i in range(len(self.preamble)):
+            if abs(pulses[i] - self.preamble[i]) > th_amp_diff:
                 return False
 
         return True
@@ -196,7 +199,7 @@ class SDRFileReader(object):
         self.signal_buffer.extend(amp.tolist())
         self.iq_buffer.extend(cdata.tolist())
 
-        if len(self.signal_buffer) >= buffer_size:
+        if len(self.signal_buffer) >= self.buffer_size:
             messages = self._process_buffer()
             self.handle_messages(messages)
 
@@ -216,7 +219,7 @@ class SDRFileReader(object):
 
         while True:
             # raw data are unsigned bytes (as IQ samples)
-            iqdata = self.fd.read(read_size)
+            iqdata = self.fd.read(self.read_size)
             if len(iqdata) == 0:
                 break
             self._read_callback(iqdata, None)
@@ -230,8 +233,12 @@ if __name__ == "__main__":
     # parse command line
     parser = argparse.ArgumentParser()
     parser.add_argument('ifile', type=str, help='Input file name')
-    parser.add_argument('-o', '--ofile', action='store', default=None, help='Output file prefix')
-    parser.add_argument('-u', '--upsample', type=int, default=1, help='Upsample factor files')
+    parser.add_argument('-o', '--ofile', action='store', 
+                        default=None, help='Output file prefix')
+    parser.add_argument('-r', '--osr', type=int, default=1, 
+                        help='Oversampling ratio')
+    parser.add_argument('-u', '--upsample', type=int, default=1, 
+                        help='Upsample factor files')
     args = parser.parse_args()
 
     # create SDR object
