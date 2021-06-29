@@ -49,8 +49,8 @@ class SDRFileReader(object):
         # sample related parameters
         self.sampling_rate = 2e6 * self.osr
         self.samples_per_microsec = 2 * self.osr
-        self.buffer_size = 1024 * 2000 * self.osr
-        self.read_size = 1024 * 1000 * self.osr
+        self.buffer_size = 1024 * 200 * self.osr
+        self.read_size = 1024 * 100 * self.osr
 
         self.exception_queue = None
 

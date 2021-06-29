@@ -5,7 +5,10 @@ test_short:
 test: test_short test_long
 
 run:
-	../sdr/rx_tools/rx_sdr -d rtlsdr -f 1090000000 -s 2000000 - |python iqreader.py - -o x
+	rtl_sdr -f 1090000000 -s 2000000 -g 0 -|python iqreader.py - -o x
+
+run_rx_sdr:
+	../../sdr/rx_tools/rx_sdr -d rtlsdr -f 1090000000 -s 2000000 -g 100 - |python iqreader.py - -o x
 
 test_long:
 	python iqreader.py data/rxa6982-long.raw
