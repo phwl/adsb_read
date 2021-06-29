@@ -17,7 +17,7 @@ input (for testing) and saving of buffers.
 (x-8.iq,2021-06-29 17:30:50.338001,0.00793687250930816)
 ```
 Each row contains (file name, time stamp, noise_floor). The files are 
-.iq files but to avoid mixing up temporary files and archived files,
+.iq files but to avoid confusing temporary files with archived ones,
 I've added the suffix .raw. Those files can also be seen in the
 ```data``` directory.
 
