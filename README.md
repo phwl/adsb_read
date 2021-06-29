@@ -5,7 +5,7 @@ from [pyModeS](https://pypi.org/project/pyModeS/) and allows sampling
 at higher sample rates (via the osr option), upsampling of the original
 input (for testing) and saving of buffers.
 
-```capture/x-iqindex.txt``` is an example of a capture index. The contents look like
+```data/x-iqindex.txt``` is an example of an index file. The contents look like
 ```
 (x-1.iq,2021-06-29 17:30:34.286561,0.00793687250930816)
 (x-2.iq,2021-06-29 17:30:34.391115,0.00793687250930816)
@@ -19,7 +19,7 @@ input (for testing) and saving of buffers.
 Each row contains (file name, time stamp, noise_floor). The files are 
 .iq files but to avoid mixing up temporary files and archived files,
 I've added the suffix .raw. Those files can also be seen in the
-```capture``` directory.
+```data``` directory.
 
 
 Try 'python iqreader.py -h' to see all the options.
