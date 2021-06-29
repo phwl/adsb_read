@@ -5,7 +5,7 @@ from [pyModeS](https://pypi.org/project/pyModeS/) and allows sampling
 at higher sample rates (via the osr option), upsampling of the original
 input (for testing) and saving of buffers.
 
-```data/x-iqindex.txt``` is an example of an index file. The contents look like
+```data/x-iqindex.txt``` is an example of an index file with contents:
 ```
 (x-1.iq,2021-06-29 17:30:34.286561,0.00793687250930816)
 (x-2.iq,2021-06-29 17:30:34.391115,0.00793687250930816)
