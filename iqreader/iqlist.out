@@ -1,17 +1,266 @@
 -- /srv/breamdisk/adsb-data/x-1.iq
-# self.noise_floor:   0.22016192799434064
-# self.signal_buffer:  mean 0.25636650785784093 std: 0.14939444146189568
 1 : 23F7114F8325C9 B45BCA
              Message: 23F7114F8325C9 
         ICAO address: B45BCA 
      Downlink Format: 4 
 
 -- /srv/breamdisk/adsb-data/x-2.iq
-# self.noise_floor:   0.2242376442544628
-# self.signal_buffer:  mean 0.26469403954008974 std: 0.15354657593397142
 1 : 2AC2042ADD8DEB E8C039
              Message: 2AC2042ADD8DEB 
         ICAO address: E8C039 
      Downlink Format: 5 
 
 -- /srv/breamdisk/adsb-data/x-3.iq
+1 : 2045E36FE41F37 802C58
+             Message: 2045E36FE41F37 
+        ICAO address: 802C58 
+     Downlink Format: 4 
+
+-- /srv/breamdisk/adsb-data/x-4.iq
+-- /srv/breamdisk/adsb-data/x-5.iq
+1 : 2008062AD98DEB 12C97B
+             Message: 2008062AD98DEB 
+        ICAO address: 12C97B 
+     Downlink Format: 4 
+
+-- /srv/breamdisk/adsb-data/x-6.iq
+-- /srv/breamdisk/adsb-data/x-7.iq
+-- /srv/breamdisk/adsb-data/x-10.iq
+1 : 8D7C6B739908AE00600C087A12AD 7C6B73 0
+             Message: 8D7C6B739908AE00600C087A12AD 
+        ICAO address: 7C6B73 
+     Downlink Format: 17 
+            Protocol: Mode-S Extended Squitter (ADS-B) 
+                Type: Airborne velocity 
+               Speed: 173 knots
+               Track: 89.34 degrees
+       Vertical rate: 128 feet/minute
+                Type: Ground speed 
+
+-- /srv/breamdisk/adsb-data/x-11.iq
+1 : 2000062AD98DEB 7C6B73
+             Message: 2000062AD98DEB 
+        ICAO address: 7C6B73 
+     Downlink Format: 4 
+
+-- /srv/breamdisk/adsb-data/x-13.iq
+1 : 2000162A3955EB 7C6B73
+             Message: 2000162A3955EB 
+        ICAO address: 7C6B73 
+     Downlink Format: 4 
+
+2 : 200096202955EB 951720
+             Message: 200096202955EB 
+        ICAO address: 951720 
+     Downlink Format: 4 
+
+3 : 25A8562A7151CB 0D35D2
+             Message: 25A8562A7151CB 
+        ICAO address: 0D35D2 
+     Downlink Format: 4 
+
+-- /srv/breamdisk/adsb-data/x-15.iq
+1 : 2000162A3945EB 7C7B73
+             Message: 2000162A3945EB 
+        ICAO address: 7C7B73 
+     Downlink Format: 4 
+
+-- /srv/breamdisk/adsb-data/x-17.iq
+1 : 28000E99E030C0 6C6B73
+             Message: 28000E99E030C0 
+        ICAO address: 6C6B73 
+     Downlink Format: 5 
+
+2 : 2000062AD98DEB 7C6B73
+             Message: 2000062AD98DEB 
+        ICAO address: 7C6B73 
+     Downlink Format: 4 
+
+-- /srv/breamdisk/adsb-data/x-18.iq
+1 : 2000062AD98DEB 7C6B73
+             Message: 2000062AD98DEB 
+        ICAO address: 7C6B73 
+     Downlink Format: 4 
+
+-- /srv/breamdisk/adsb-data/x-21.iq
+-- /srv/breamdisk/adsb-data/x-22.iq
+-- /srv/breamdisk/adsb-data/x-25.iq
+1 : 2002062A3915EB 875BF1
+             Message: 2002062A3915EB 
+        ICAO address: 875BF1 
+     Downlink Format: 4 
+
+-- /srv/breamdisk/adsb-data/x-26.iq
+1 : 5D7C6A73F228F4 7C6A73
+             Message: 5D7C6A73F228F4 
+        ICAO address: 7C6A73 
+     Downlink Format: 11 
+
+-- /srv/breamdisk/adsb-data/x-27.iq
+1 : 5CA1CFA8E10F05 A1CFA8
+             Message: 5CA1CFA8E10F05 
+        ICAO address: A1CFA8 
+     Downlink Format: 11 
+
+-- /srv/breamdisk/adsb-data/x-28.iq
+-- /srv/breamdisk/adsb-data/x-29.iq
+1 : 584034CE8306E0 4034CE
+             Message: 584034CE8306E0 
+        ICAO address: 4034CE 
+     Downlink Format: 11 
+
+-- /srv/breamdisk/adsb-data/x-30.iq
+1 : 2DBFFF4790E830 F43041
+             Message: 2DBFFF4790E830 
+        ICAO address: F43041 
+     Downlink Format: 5 
+
+-- /srv/breamdisk/adsb-data/x-32.iq
+1 : A8576FC4C453FA5A3E9621B7593F 506482
+             Message: A8576FC4C453FA5A3E9621B7593F 
+        ICAO address: 506482 
+     Downlink Format: 21 
+            Protocol: Mode-S Comm-B identity reply 
+         Squawk code: 7062 
+                 BDS: None 
+
+2 : 5D0A8DD81744CD 0A8DD8
+             Message: 5D0A8DD81744CD 
+        ICAO address: 0A8DD8 
+     Downlink Format: 11 
+
+-- /srv/breamdisk/adsb-data/x-33.iq
+-- /srv/breamdisk/adsb-data/x-34.iq
+1 : 2161072A7951BB 3B17CA
+             Message: 2161072A7951BB 
+        ICAO address: 3B17CA 
+     Downlink Format: 4 
+
+-- /srv/breamdisk/adsb-data/x-35.iq
+1 : 28000E19F230D0 796DA3
+             Message: 28000E19F230D0 
+        ICAO address: 796DA3 
+     Downlink Format: 5 
+
+-- /srv/breamdisk/adsb-data/x-36.iq
+-- /srv/breamdisk/adsb-data/x-37.iq
+1 : 238D083351BA8A 9D5DBA
+             Message: 238D083351BA8A 
+        ICAO address: 9D5DBA 
+     Downlink Format: 4 
+
+-- /srv/breamdisk/adsb-data/x-38.iq
+1 : 28000E99F030C0 7C6B73
+             Message: 28000E99F030C0 
+        ICAO address: 7C6B73 
+     Downlink Format: 5 
+
+-- /srv/breamdisk/adsb-data/x-40.iq
+1 : 28000E99F030C0 7C6B73
+             Message: 28000E99F030C0 
+        ICAO address: 7C6B73 
+     Downlink Format: 5 
+
+-- /srv/breamdisk/adsb-data/x-41.iq
+1 : 223CF5C9B67388 361A3E
+             Message: 223CF5C9B67388 
+        ICAO address: 361A3E 
+     Downlink Format: 4 
+
+-- /srv/breamdisk/adsb-data/x-42.iq
+1 : 29A9927656382C 96E67D
+             Message: 29A9927656382C 
+        ICAO address: 96E67D 
+     Downlink Format: 5 
+
+2 : 2D3C57BA39A8BB EC2812
+             Message: 2D3C57BA39A8BB 
+        ICAO address: EC2812 
+     Downlink Format: 5 
+
+-- /srv/breamdisk/adsb-data/x-43.iq
+-- /srv/breamdisk/adsb-data/x-47.iq
+1 : 597C6B73F028F4 7C6B73
+             Message: 597C6B73F028F4 
+        ICAO address: 7C6B73 
+     Downlink Format: 11 
+
+2 : 280006D9F030C4 0F8417
+             Message: 280006D9F030C4 
+        ICAO address: 0F8417 
+     Downlink Format: 5 
+
+-- /srv/breamdisk/adsb-data/x-48.iq
+1 : 2CB0DC4FED3ABE C1B2B6
+             Message: 2CB0DC4FED3ABE 
+        ICAO address: C1B2B6 
+     Downlink Format: 5 
+
+-- /srv/breamdisk/adsb-data/x-52.iq
+1 : 2188172A3175EB D51D05
+             Message: 2188172A3175EB 
+        ICAO address: D51D05 
+     Downlink Format: 4 
+
+2 : 28000E99F030C0 7C6B73
+             Message: 28000E99F030C0 
+        ICAO address: 7C6B73 
+     Downlink Format: 5 
+
+3 : 2000162A3955EB 7C6B73
+             Message: 2000162A3955EB 
+        ICAO address: 7C6B73 
+     Downlink Format: 4 
+
+-- /srv/breamdisk/adsb-data/x-54.iq
+1 : 2FABBCB67926B2 34DF22
+             Message: 2FABBCB67926B2 
+        ICAO address: 34DF22 
+     Downlink Format: 5 
+
+-- /srv/breamdisk/adsb-data/x-55.iq
+1 : 2000162A3955EB 7C6B73
+             Message: 2000162A3955EB 
+        ICAO address: 7C6B73 
+     Downlink Format: 4 
+
+-- /srv/breamdisk/adsb-data/x-59.iq
+1 : 23DA3726630F18 A285C3
+             Message: 23DA3726630F18 
+        ICAO address: A285C3 
+     Downlink Format: 4 
+
+2 : 2000162A3955EB 7C6B73
+             Message: 2000162A3955EB 
+        ICAO address: 7C6B73 
+     Downlink Format: 4 
+
+-- /srv/breamdisk/adsb-data/x-61.iq
+-- /srv/breamdisk/adsb-data/x-62.iq
+-- /srv/breamdisk/adsb-data/x-64.iq
+1 : 2000062AD98D6B 7C6BF3
+             Message: 2000062AD98D6B 
+        ICAO address: 7C6BF3 
+     Downlink Format: 4 
+
+-- /srv/breamdisk/adsb-data/x-67.iq
+1 : AEE110A21E266D46D8449EB6A320 E1CB06
+             Message: AEE110A21E266D46D8449EB6A320 
+        ICAO address: E1CB06 
+     Downlink Format: 21 
+            Protocol: Mode-S Comm-B identity reply 
+         Squawk code: 4510 
+                 BDS: None 
+
+2 : 20010428D98DEB 6DB829
+             Message: 20010428D98DEB 
+        ICAO address: 6DB829 
+     Downlink Format: 4 
+
+-- /srv/breamdisk/adsb-data/x-69.iq
+1 : 20001719391B9D 8CE1FF
+             Message: 20001719391B9D 
+        ICAO address: 8CE1FF 
+     Downlink Format: 4 
+
+-- /srv/breamdisk/adsb-data/x-70.iq

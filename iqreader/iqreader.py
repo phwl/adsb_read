@@ -138,16 +138,6 @@ class SDRFileReader(object):
                         msgbin = []
                         break
 
-                    #if max(p2[0:osr]) < threshold and max(p2[osr:]) < threshold:
-                        #break
-                    #elif min(p2[0:osr]) >= max(p2[osr:]):
-                        #c = 1
-                    #elif max(p2[0:osr]) < min(p2[osr:]):
-                        #c = 0
-                    #else:
-                        #msgbin = []
-                        #break
-
                     msgbin.append(c)
 
                 # advance i with a jump
