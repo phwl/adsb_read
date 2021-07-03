@@ -228,21 +228,21 @@ class SDRFileReader(object):
 
     def _print_msg(self, msg):
         df = pms.df(msg)
-        if not df in [17, 20, 21, 4, 5, 11]:
-            return
+        if self._check_msg(msg):
+            msglen = len(msg)
+            if df == 17 and msglen == 28:
+                print(self.frames, ":", msg, pms.icao(msg), pms.crc(msg))
+            elif df in [20, 21] and msglen == 28:
+                print(self.frames, ":", msg, pms.icao(msg))
+            elif df in [4, 5, 11] and msglen == 14:
+                print(self.frames, ":", msg, pms.icao(msg))
+            if self.verbose:
+                pms.tell(msg)
+                print()
+        else:
+            pass
+            # print("X", ":", msg)
 
-        frames = self.frames if self._check_msg(msg) else "X"
-        ok = "Y" if self._check_msg(msg) else "N"
-        msglen = len(msg)
-        if df == 17 and msglen == 28:
-            print(frames, ":", msg, pms.icao(msg), pms.crc(msg), ok)
-        elif df in [20, 21] and msglen == 28:
-            print(frames, ":", msg, pms.icao(msg), ok)
-        elif df in [4, 5, 11] and msglen == 14:
-            print(frames, ":", msg, pms.icao(msg), ok)
-        if self.verbose:
-            pms.tell(msg)
-            print()
 
     def _read_callback(self, cdata, rtlsdr_obj):
         # scale to be in range [-1,1)
