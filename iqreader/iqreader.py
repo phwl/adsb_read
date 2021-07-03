@@ -2,7 +2,9 @@ import time
 import traceback
 import numpy as np
 import pyModeS as pms
+import statistics as stats
 import sys
+import adi
 from datetime import datetime
 
 
@@ -32,9 +34,12 @@ class SDRFileReader(object):
         self.upsample = args.upsample
         self.osr = args.osr
 
+        # find input source
         self.ofile = self.args.ofile
         self.ifile = self.args.ifile
-        if self.ifile == '-':
+        if self.ifile == None:
+            self.sdr = adi.Pluto("ip:pluto.local")
+        elif self.ifile == '-':
             self.fd = open(0, 'rb')
         else:
             self.fd = open(self.ifile, 'rb')
@@ -45,12 +50,22 @@ class SDRFileReader(object):
         self.stop_flag = False
         self.noise_floor = 1e6
         self.preamble = replicate(preamble, self.osr)
+        self.preamble_len = len(self.preamble)
 
         # sample related parameters
         self.sampling_rate = 2e6 * self.osr
         self.samples_per_microsec = 2 * self.osr
-        self.buffer_size = 1024 * 200 * self.osr
-        self.read_size = 1024 * 100 * self.osr
+        self.buffer_size = 1024 * 2000 * self.osr
+        self.read_size = 1024 * 1000 * self.osr
+
+        # set up SDR (if we have one)
+        if self.ifile == None:
+            print("sample rate: {}".format(self.sampling_rate))
+            self.sdr.sample_rate = int(self.sampling_rate)
+            self.sdr.rx_rf_bandwidth = int(self.sampling_rate) 
+            self.sdr.rx_lo = int(modes_frequency)
+            self.sdr.rx_buffer_size = int(self.read_size)
+            self.sdr.gain_control_mode_chan0 = "fast_attack"
 
         self.exception_queue = None
 
@@ -68,6 +83,9 @@ class SDRFileReader(object):
     def _process_buffer(self):
         """process raw IQ data in the buffer"""
 
+        # how many packets did we see
+        pkts = 0
+
         # oversampling rate is the rate above the minimum 2 MHz one
         osr = self.osr
 
@@ -81,6 +99,7 @@ class SDRFileReader(object):
         messages = []
 
         buffer_length = len(self.signal_buffer)
+        # print(stats.mean(self.signal_buffer), stats.stdev(self.signal_buffer))
 
         i = 0
         while i < buffer_length:
@@ -102,15 +121,25 @@ class SDRFileReader(object):
                     if len(p2) < 2 * osr:
                         break
 
-                    if max(p2[0:osr]) < threshold and max(p2[osr:]) < threshold:
+                    if p2[0] < threshold and p2[osr] < threshold:
                         break
-                    elif min(p2[0:osr]) >= max(p2[osr:]):
+                    elif p2[0] >= p2[osr]:
                         c = 1
-                    elif max(p2[0:osr]) < min(p2[osr:]):
+                    elif p2[0] < p2[osr]:
                         c = 0
                     else:
                         msgbin = []
                         break
+
+                    #if max(p2[0:osr]) < threshold and max(p2[osr:]) < threshold:
+                        #break
+                    #elif min(p2[0:osr]) >= max(p2[osr:]):
+                        #c = 1
+                    #elif max(p2[0:osr]) < min(p2[osr:]):
+                        #c = 0
+                    #else:
+                        #msgbin = []
+                        #break
 
                     msgbin.append(c)
 
@@ -122,8 +151,6 @@ class SDRFileReader(object):
                     if self._check_msg(msghex):
                         self.frames = self.frames + 1
                         messages.append([msghex, time.time()])
-                        if self.ofile is not None:
-                            self._saveiq(self._complextoiq(self.ciq_buffer))
 
                     if self.debug:
                         self._debug_msg(msghex)
@@ -133,6 +160,11 @@ class SDRFileReader(object):
             #     break
             else:
                 i += 1
+
+
+        # save buffer if we saw messages
+        if len(messages) > 0 and self.ofile is not None:
+            self._saveiq(self._complextoiq(self.ciq_buffer))
 
         # reset the buffer
         self.signal_buffer = self.signal_buffer[i:]
@@ -168,10 +200,10 @@ class SDRFileReader(object):
         fs.close()
 
     def _check_preamble(self, pulses):
-        if len(pulses) != len(self.preamble):
+        if len(pulses) != self.preamble_len:
             return False
 
-        for i in range(len(self.preamble)):
+        for i in range(self.preamble_len):
             if abs(pulses[i] - self.preamble[i]) > th_amp_diff:
                 return False
 
@@ -201,9 +233,8 @@ class SDRFileReader(object):
             # print("[*]", msg, "df={}, mesglen={}".format(df, msglen))
             pass
 
-    def _read_callback(self, iqdata, rtlsdr_obj):
+    def _read_callback(self, cdata, rtlsdr_obj):
         # scale to be in range [-1,1)
-        cdata = self._iqtocomplex(iqdata)
         if self.upsample > 1:
             cdata = replicate(cdata, self.upsample)
         amp = np.absolute(cdata)
@@ -230,10 +261,14 @@ class SDRFileReader(object):
 
         while True:
             # raw data are unsigned bytes (as IQ samples)
-            iqdata = self.fd.read(self.read_size)
-            if len(iqdata) == 0:
+            if self.ifile == None:
+                cdata = self.sdr.rx() / 256
+            else:
+                iqdata = self.fd.read(self.read_size)
+                cdata = self._iqtocomplex(iqdata)
+            if len(cdata) == 0:
                 break
-            self._read_callback(iqdata, None)
+            self._read_callback(cdata, None)
 
 
 
@@ -243,14 +278,18 @@ if __name__ == "__main__":
 
     # parse command line
     parser = argparse.ArgumentParser()
-    parser.add_argument('ifile', type=str, help='Input file name')
+    parser.add_argument('-i', '--ifile', action='store', 
+                        default=None, help='Input file name')
     parser.add_argument('-o', '--ofile', action='store', 
                         default=None, help='Output file prefix')
     parser.add_argument('-r', '--osr', type=int, default=1, 
                         help='Oversampling ratio')
+    parser.add_argument('-p', '--profile', action='store_true', 
+                        help='Enable profiling')
     parser.add_argument('-u', '--upsample', type=int, default=1, 
                         help='Upsample factor files')
     args = parser.parse_args()
+
 
     # create SDR object
     rtl = SDRFileReader(args = args)
@@ -258,4 +297,9 @@ if __name__ == "__main__":
     signal.signal(signal.SIGINT, rtl.stop)
 
     rtl.debug = True
-    rtl.run()
+
+    if (args.profile):
+        import cProfile
+        cProfile.run('rtl.run()')
+    else:
+        rtl.run()
