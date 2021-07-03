@@ -6,6 +6,7 @@ import statistics as stats
 import sys
 import adi
 from datetime import datetime
+import scipy.signal
 
 
 modes_frequency = 1090e6
@@ -31,8 +32,9 @@ class SDRFileReader(object):
         # command line args
         self.debug = kwargs.get("debug", False)
         self.args = kwargs.get('args')
-        self.upsample = args.upsample
-        self.osr = args.osr
+        self.upsample = args.upsample       # replicates incoming data 
+        self.downsample = args.downsample   # decimates incoming data
+        self.osr = args.osr     # oversampling ratio
 
         # find input source
         self.ofile = self.args.ofile
@@ -248,7 +250,7 @@ class SDRFileReader(object):
     def handle_messages(self, messages):
         """re-implement this method to handle the messages"""
         for msg, t in messages:
-            # print("%15.9f %s" % (t, msg))
+            print("%15.9f %s" % (t, msg))
             pass
 
     def stop(self, *args, **kwargs):
@@ -268,6 +270,8 @@ class SDRFileReader(object):
                 cdata = self._iqtocomplex(iqdata)
             if len(cdata) == 0:
                 break
+            if self.downsample > 1:
+                cdata = scipy.signal.decimate(cdata, self.downsample)
             self._read_callback(cdata, None)
 
 
@@ -287,7 +291,9 @@ if __name__ == "__main__":
     parser.add_argument('-p', '--profile', action='store_true', 
                         help='Enable profiling')
     parser.add_argument('-u', '--upsample', type=int, default=1, 
-                        help='Upsample factor files')
+                        help='Upsample factor')
+    parser.add_argument('-d', '--downsample', type=int, default=1, 
+                        help='Downsample factor')
     args = parser.parse_args()
 
 
