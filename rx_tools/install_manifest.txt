@@ -1,0 +1,3 @@
+/usr/local/bin/rx_fm
+/usr/local/bin/rx_power
+/usr/local/bin/rx_sdr

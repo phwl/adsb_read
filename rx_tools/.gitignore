@@ -8,6 +8,3 @@
 rx_fm
 rx_power
 rx_sdr
-
-*.iq
-*-iqindex.txt
