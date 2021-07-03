@@ -34,7 +34,8 @@ class SDRFileReader(object):
         self.args = kwargs.get('args')
         self.upsample = args.upsample       # replicates incoming data 
         self.downsample = args.downsample   # decimates incoming data
-        self.osr = args.osr     # oversampling ratio
+        self.osr = args.osr                 # oversampling ratio
+        self.verbose = args.verbose         # verbose mode
 
         # find input source
         self.ofile = self.args.ofile
@@ -50,7 +51,7 @@ class SDRFileReader(object):
         self.frames = 0
         self.raw_pipe_in = None
         self.stop_flag = False
-        self.noise_floor = 1e6
+        self.noise_floor = 1.0e6
         self.preamble = replicate(preamble, self.osr)
         self.preamble_len = len(self.preamble)
 
@@ -58,7 +59,7 @@ class SDRFileReader(object):
         self.sampling_rate = 2e6 * self.osr
         self.samples_per_microsec = 2 * self.osr
         self.buffer_size = 1024 * 2000 * self.osr
-        self.read_size = 1024 * 1000 * self.osr
+        self.read_size = self.buffer_size // 2
 
         # set up SDR (if we have one)
         if self.ifile == None:
@@ -101,7 +102,11 @@ class SDRFileReader(object):
         messages = []
 
         buffer_length = len(self.signal_buffer)
-        # print(stats.mean(self.signal_buffer), stats.stdev(self.signal_buffer))
+
+        if self.verbose:
+            print("# self.noise_floor:  ", self.noise_floor)
+            print("# self.signal_buffer:  mean", stats.mean(self.signal_buffer), 
+                  "std:", stats.stdev(self.signal_buffer))
 
         i = 0
         while i < buffer_length:
@@ -154,8 +159,7 @@ class SDRFileReader(object):
                         self.frames = self.frames + 1
                         messages.append([msghex, time.time()])
 
-                    if self.debug:
-                        self._debug_msg(msghex)
+                    self._print_msg(msghex)
 
             # elif i > buffer_length - 500:
             #     # save some for next process
@@ -222,18 +226,23 @@ class SDRFileReader(object):
         elif df in [4, 5, 11] and msglen == 14:
             return True
 
-    def _debug_msg(self, msg):
+    def _print_msg(self, msg):
         df = pms.df(msg)
+        if not df in [17, 20, 21, 4, 5, 11]:
+            return
+
+        frames = self.frames if self._check_msg(msg) else "X"
+        ok = "Y" if self._check_msg(msg) else "N"
         msglen = len(msg)
         if df == 17 and msglen == 28:
-            print(self.frames, ":", msg, pms.icao(msg), pms.crc(msg))
+            print(frames, ":", msg, pms.icao(msg), pms.crc(msg), ok)
         elif df in [20, 21] and msglen == 28:
-            print(self.frames, ":", msg, pms.icao(msg))
+            print(frames, ":", msg, pms.icao(msg), ok)
         elif df in [4, 5, 11] and msglen == 14:
-            print(self.frames, ":", msg, pms.icao(msg))
-        else:
-            # print("[*]", msg, "df={}, mesglen={}".format(df, msglen))
-            pass
+            print(frames, ":", msg, pms.icao(msg), ok)
+        if self.verbose:
+            pms.tell(msg)
+            print()
 
     def _read_callback(self, cdata, rtlsdr_obj):
         # scale to be in range [-1,1)
@@ -249,12 +258,12 @@ class SDRFileReader(object):
 
     def handle_messages(self, messages):
         """re-implement this method to handle the messages"""
-        for msg, t in messages:
-            print("%15.9f %s" % (t, msg))
-            pass
+        #for msg, t in messages:
+            #print("%15.9f %s" % (t, msg))
+            #pass
 
     def stop(self, *args, **kwargs):
-        self.sdr.close()
+        sys.exit()
 
     def run(self, raw_pipe_in=None, stop_flag=None, exception_queue=None):
         self.raw_pipe_in = raw_pipe_in
@@ -288,6 +297,8 @@ if __name__ == "__main__":
                         default=None, help='Output file prefix')
     parser.add_argument('-r', '--osr', type=int, default=1, 
                         help='Oversampling ratio')
+    parser.add_argument('-v', '--verbose', action='store_true', 
+                        help='Verbose mode')
     parser.add_argument('-p', '--profile', action='store_true', 
                         help='Enable profiling')
     parser.add_argument('-u', '--upsample', type=int, default=1, 
