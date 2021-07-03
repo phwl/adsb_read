@@ -1,3 +1,6 @@
+run_pluto:
+	python iqreader.py --osr 4 -o /srv/breamdisk/adsb-data/x
+
 test_short:
 	python iqreader.py -i data/rxa6982-short.raw
 	python iqreader.py -u16 -r16 -i data/rxa6982-short.raw
