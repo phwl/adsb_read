@@ -5,5 +5,5 @@
 readarray -d '' entries < <(printf '%s\0' $1-*.iq | sort -zV)
 for i in "${entries[@]}"; do
   echo "-- $i"
-  python iqreader.py -v --osr 4 -i $i
+  python iqreader.py -v --osr 4 -i $i 2>&1
 done

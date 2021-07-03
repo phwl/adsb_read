@@ -103,7 +103,7 @@ class SDRFileReader(object):
 
         buffer_length = len(self.signal_buffer)
 
-        if self.verbose:
+        if self.verbose > 1:
             print("# self.noise_floor:  ", self.noise_floor)
             print("# self.signal_buffer:  mean", stats.mean(self.signal_buffer), 
                   "std:", stats.stdev(self.signal_buffer))
@@ -236,7 +236,7 @@ class SDRFileReader(object):
                 print(self.frames, ":", msg, pms.icao(msg))
             elif df in [4, 5, 11] and msglen == 14:
                 print(self.frames, ":", msg, pms.icao(msg))
-            if self.verbose:
+            if self.verbose > 0:
                 pms.tell(msg)
                 print()
         else:
@@ -297,7 +297,7 @@ if __name__ == "__main__":
                         default=None, help='Output file prefix')
     parser.add_argument('-r', '--osr', type=int, default=1, 
                         help='Oversampling ratio')
-    parser.add_argument('-v', '--verbose', action='store_true', 
+    parser.add_argument('-v', '--verbose', action='count', default=0,
                         help='Verbose mode')
     parser.add_argument('-p', '--profile', action='store_true', 
                         help='Enable profiling')
