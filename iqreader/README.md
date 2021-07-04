@@ -7,7 +7,8 @@ input (for testing) and saving of buffers.
 
 ![xcorr](xcorr.png)
 
-To run just look at the Makefile (or type "make run").
+To understand how to use the program take a look at the Makefile. An example of running using ```rx_tools''' 
+is given below.
 
 ``` bash
 $ ../sdr/rx_tools/rx_sdr -d rtlsdr -f 1090000000 -s 2000000 - |python iqreader.py - -o x

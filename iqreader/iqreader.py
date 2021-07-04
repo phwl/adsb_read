@@ -8,6 +8,7 @@ import adi
 from datetime import datetime
 import scipy.signal as sig
 import matplotlib.pyplot as plt
+import pickle
 
 modes_frequency = 1090e6
 
@@ -47,8 +48,9 @@ th_amp_diff = 0.8   # signal amplitude threshold difference between 0 and 1 bit
 class SDRFileReader(object):
     def __init__(self, **kwargs):
         super(SDRFileReader, self).__init__()
-        self.signal_buffer = []  # amplitude of the sample only
-        self.ciq_buffer = []  # iq samples
+        self.signal_buffer = []             # amplitude of the sample only
+        self.ciq_buffer = []                # iq samples
+        self.tdata = []
 
         # command line args
         self.debug = kwargs.get("debug", False)
@@ -61,6 +63,7 @@ class SDRFileReader(object):
         # find input source
         self.ofile = self.args.ofile
         self.ifile = self.args.ifile
+        self.tfile = self.args.tfile
         if self.ifile == None:
             self.sdr = adi.Pluto("ip:pluto.local")
         elif self.ifile == '-':
@@ -139,7 +142,6 @@ class SDRFileReader(object):
                 frame_start = i + pbits * 2 * osr
                 frame_end = i + (pbits + (fbits + 1)) * 2 * osr
                 frame_length = (fbits + 1) * 2 * osr
-                frame_window = self.signal_buffer[i-osr:frame_end+osr]
                 frame_pulses = self.signal_buffer[frame_start:frame_end]
 
                 threshold = max(frame_pulses) * 0.2
@@ -165,10 +167,11 @@ class SDRFileReader(object):
                 if len(msgbin) > 0:
                     msghex = pms.bin2hex("".join([str(i) for i in msgbin]))
                     self._debug_msg(msghex)
-                    if self._check_msg(msghex):
+                    if self._check_msg(msghex):     # we have a good message
+                        iq_window = self.ciq_buffer[i-osr:frame_end+osr]
                         self.frames = self.frames + 1
                         messages.append([msghex, time.time()])
-                        self._good_msg(msghex, frame_start, frame_end, frame_window)
+                        self._good_msg(msghex, iq_window)
                     else:
                         i += 1
                         continue
@@ -180,9 +183,13 @@ class SDRFileReader(object):
                 i += 1
 
 
-        # save buffer if we saw messages
-        if len(messages) > 0 and self.ofile is not None:
-            self._saveiq(self._complextoiq(self.ciq_buffer))
+        # save buffer for debugging purposes
+        if self.debug >= 10 and len(messages) > 0 and self.ofile is not None:
+            self._saveiqbuffer(self._complextoiq(self.ciq_buffer))
+
+        # save the data extracted
+        if len(messages) > 0:
+            self._savetdata()
 
         # reset the buffer
         self.signal_buffer = self.signal_buffer[i:]
@@ -205,7 +212,17 @@ class SDRFileReader(object):
         iq = rdata.astype(np.uint8)
         return iq
 
-    def _saveiq(self, frame):
+    # save the NN training set
+    def _savetdata(self):
+        if self.tfile is not None:
+            fname = '{}-{}-tdata.bin'.format(self.tfile, self.frames)
+            print("Writing training file to", fname)
+            with open(fname, "wb") as fd:
+                pickle.dump(self.tdata, fd)
+        self.tdata = []
+
+    # save an entire iq buffer
+    def _saveiqbuffer(self, frame):
         # append info to index file
         fname = '{}-{}.iq'.format(self.ofile, self.frames)
         ft = open('{}-iqindex.txt'.format(self.ofile), 'a')
@@ -238,20 +255,29 @@ class SDRFileReader(object):
         elif df in [4, 5, 11] and msglen == 14:
             return True
 
-    def _good_msg(self, msg, frame_start, frame_end, frame_window):
-        # find the best alignment
-        if self.verbose >= 3:
-            # the expected bitstream
-            gold_msg = msg2bin(msg, self.osr) * 0.5
+    def _good_msg(self, msg, iq_window):
+        # iq_window are our raw samples find the best alignment
+        frame_window = amp = np.absolute(iq_window)
 
-            # correlate to find best alignment
-            (i, xc) = n_xcorr(np.array(frame_window), np.array(gold_msg))
-            n = len(gold_msg)
+        # generate the expected time domain waveform from the message
+        gold_msg = msg2bin(msg, self.osr) * 0.5
 
+        # correlate gold message to find best alignment
+        (besti, xc) = n_xcorr(np.array(frame_window), np.array(gold_msg))
+
+        # generate DNN training vector
+        n = len(gold_msg)
+        d_in = iq_window[besti:besti+n]
+        d_out = pms.icao(msg)
+        dtime = str(datetime.now())
+
+        self.tdata.append((dtime, d_in, d_out))
+
+        if self.verbose >= 4:
             # make plot
             fig, axs = plt.subplots(2)
             fig.suptitle('Alignment')
-            axs[0].plot(range(n), gold_msg, range(n), frame_window[i:i+n])
+            axs[0].plot(range(n), gold_msg, range(n), frame_window[besti:besti+n])
             axs[0].set(xlabel='Sample', ylabel='Magnitude')
             axs[1].plot(xc[0:2*self.osr])
             axs[1].set(xlabel='Offset', ylabel='Normalised cross correlation')
@@ -325,6 +351,8 @@ if __name__ == "__main__":
                         default=None, help='Input file name')
     parser.add_argument('-o', '--ofile', action='store', 
                         default=None, help='Output file prefix')
+    parser.add_argument('-t', '--tfile', action='store', 
+                        default=None, help='Output training set file')
     parser.add_argument('-r', '--osr', type=int, default=1, 
                         help='Oversampling ratio')
     parser.add_argument('-v', '--verbose', action='count', default=0,
