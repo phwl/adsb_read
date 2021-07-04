@@ -75,7 +75,7 @@ class SDRFileReader(object):
         self.frames = 0
         self.raw_pipe_in = None
         self.stop_flag = False
-        self.noise_floor = 1.0e6
+        self.noise_floor = 0.025
         self.preamble = replicate(preamble, self.osr)
         self.preamble_len = len(self.preamble)
 
