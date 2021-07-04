@@ -9,6 +9,7 @@ from datetime import datetime
 import scipy.signal
 import matplotlib.pyplot as plt
 
+
 modes_frequency = 1090e6
 
 # Returns a np.array with each element of _r replicated times times
@@ -145,17 +146,15 @@ class SDRFileReader(object):
 
                 if len(msgbin) > 0:
                     msghex = pms.bin2hex("".join([str(i) for i in msgbin]))
-                    self._debug_msg(msghex)
+                    # we have a message now but don't know if it is good
                     if self._check_msg(msghex):
                         self.frames = self.frames + 1
                         messages.append([msghex, time.time()])
                         self._good_msg(msghex, frame_start, frame_end, frame_pulses)
 
+                    if self.verbose > 1:
+                        self._debug_msg(msghex)
 
-            # elif i > buffer_length - 500:
-            #     # save some for next process
-            #     break
-            else:
                 i += 1
 
 
@@ -218,9 +217,13 @@ class SDRFileReader(object):
             return True
 
     def _good_msg(self, msg, frame_start, frame_end, frame_pulses):
-        if self.verbose > 2:
-            plt.bar(range(len(frame_pulses)), frame_pulses)
-            plt.show()
+        # print out the message
+        self._debug_msg(msg)
+
+        # other info
+        print(frame_pulses)
+        #plt.plot(frame_pulses)
+        #plt.show()
 
     def _debug_msg(self, msg):
         df = pms.df(msg)
@@ -232,11 +235,11 @@ class SDRFileReader(object):
                 print(self.frames, ":", msg, pms.icao(msg))
             elif df in [4, 5, 11] and msglen == 14:
                 print(self.frames, ":", msg, pms.icao(msg))
-            if self.verbose > 0:
+            if self.verbose > 1:
                 pms.tell(msg)
-                print()
-        elif self.debug > 0:
-            print("X", ":", msg)
+            print()
+        else:   # bad message
+            print("X", ":", msg, "(df=", df, ")")
 
 
     def _read_callback(self, cdata, rtlsdr_obj):
