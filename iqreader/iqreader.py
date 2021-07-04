@@ -9,6 +9,7 @@ from datetime import datetime
 import scipy.signal as sig
 import matplotlib.pyplot as plt
 import pickle
+import os
 
 modes_frequency = 1090e6
 
@@ -73,6 +74,7 @@ class SDRFileReader(object):
 
         # member variables
         self.frames = 0
+        self.fileno = 0
         self.raw_pipe_in = None
         self.stop_flag = False
         self.noise_floor = 0.025
@@ -168,7 +170,7 @@ class SDRFileReader(object):
                     msghex = pms.bin2hex("".join([str(i) for i in msgbin]))
                     self._debug_msg(msghex)
                     if self._check_msg(msghex):     # we have a good message
-                        iq_window = self.ciq_buffer[i-osr:frame_end+osr]
+                        iq_window = self.ciq_buffer[i:frame_end]
                         self.frames = self.frames + 1
                         messages.append([msghex, time.time()])
                         self._good_msg(msghex, iq_window)
@@ -215,7 +217,11 @@ class SDRFileReader(object):
     # save the NN training set
     def _savetdata(self):
         if self.tfile is not None:
-            fname = '{}-{}-tdata.bin'.format(self.tfile, self.frames)
+            while True:
+                fname = '{}-{}-tdata.bin'.format(self.tfile, self.fileno)
+                if not os.path.isfile(fname):
+                    break
+                self.fileno += 1
             print("Writing training file to", fname)
             with open(fname, "wb") as fd:
                 pickle.dump(self.tdata, fd)
@@ -263,7 +269,8 @@ class SDRFileReader(object):
         gold_msg = msg2bin(msg, self.osr) * 0.5
 
         # correlate gold message to find best alignment
-        (besti, xc) = n_xcorr(np.array(frame_window), np.array(gold_msg))
+        # (besti, xc) = n_xcorr(np.array(frame_window), np.array(gold_msg))
+        besti = 0
 
         # generate DNN training vector
         n = len(gold_msg)
@@ -275,13 +282,14 @@ class SDRFileReader(object):
 
         if self.verbose >= 4:
             # make plot
-            fig, axs = plt.subplots(2)
-            fig.suptitle('Alignment')
-            axs[0].plot(range(n), gold_msg, range(n), frame_window[besti:besti+n])
-            axs[0].set(xlabel='Sample', ylabel='Magnitude')
-            axs[1].plot(xc[0:2*self.osr])
-            axs[1].set(xlabel='Offset', ylabel='Normalised cross correlation')
-            plt.show()
+            #fig, axs = plt.subplots(2)
+            #fig.suptitle('Alignment')
+            #axs[0].plot(range(n), gold_msg, range(n), frame_window[besti:besti+n])
+            #axs[0].set(xlabel='Sample', ylabel='Magnitude')
+            #axs[1].plot(xc[0:2*self.osr])
+            #axs[1].set(xlabel='Offset', ylabel='Normalised cross correlation')
+            #plt.show()
+            pass
 
     def _debug_msg(self, msg):
         df = pms.df(msg)
@@ -293,9 +301,6 @@ class SDRFileReader(object):
                 print(self.frames, ":", msg, pms.icao(msg))
             elif df in [4, 5, 11] and msglen == 14:
                 print(self.frames, ":", msg, pms.icao(msg))
-            if self.verbose >= 1:
-                pms.tell(msg)
-                print()
         elif self.debug:
             print("X", ":", msg)
 

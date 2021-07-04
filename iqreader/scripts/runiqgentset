@@ -1,2 +1,0 @@
-#!/bin/bash
-./iqgentset /srv/breamdisk/adsb-data/x | tee iqgentset.out
