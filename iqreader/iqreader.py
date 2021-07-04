@@ -6,7 +6,7 @@ import statistics as stats
 import sys
 import adi
 from datetime import datetime
-import scipy.signal
+import scipy.signal as sig
 import matplotlib.pyplot as plt
 
 modes_frequency = 1090e6
@@ -17,6 +17,27 @@ def replicate(a, c):
     for x in a:
         r.extend([x] * c)
     return np.array(r)
+
+
+# normalised cross-correlation
+def n_xcorr(x, y):
+    "Plot normalised cross-correlation between two signals. look for best position in x (y is the reference)"
+    ynorm = y - stats.mean(y)
+    n = len(ynorm)
+    xc = np.zeros(len(x)-n)
+    
+    for i in range(len(xc)):
+        t = x[i:i+n]
+        tnorm = t - stats.mean(t)
+        xc[i] = np.dot(ynorm, tnorm) / (np.linalg.norm(ynorm, 2) * np.linalg.norm(tnorm, 2))
+    return(np.argmax(xc), xc)
+
+# generates the code for a message
+def msg2bin(msg, osr):
+    ex_msg = "".join(['10' if x == '1' else '01' for x in pms.hex2bin(msg)])
+    ex_preamble = "".join(['1' if x == 1 else '0' for x in preamble])
+    ex_full = [1 if x == '1' else 0 for x in (ex_preamble + ex_msg)]
+    return replicate(ex_full, osr)
 
 pbits = 8
 fbits = 112
@@ -118,6 +139,7 @@ class SDRFileReader(object):
                 frame_start = i + pbits * 2 * osr
                 frame_end = i + (pbits + (fbits + 1)) * 2 * osr
                 frame_length = (fbits + 1) * 2 * osr
+                frame_window = self.signal_buffer[i-osr:frame_end+osr]
                 frame_pulses = self.signal_buffer[frame_start:frame_end]
 
                 threshold = max(frame_pulses) * 0.2
@@ -146,7 +168,7 @@ class SDRFileReader(object):
                     if self._check_msg(msghex):
                         self.frames = self.frames + 1
                         messages.append([msghex, time.time()])
-                        self._good_msg(msghex, frame_start, frame_end, frame_pulses)
+                        self._good_msg(msghex, frame_start, frame_end, frame_window)
                     else:
                         i += 1
                         continue
@@ -216,9 +238,23 @@ class SDRFileReader(object):
         elif df in [4, 5, 11] and msglen == 14:
             return True
 
-    def _good_msg(self, msg, frame_start, frame_end, frame_pulses):
+    def _good_msg(self, msg, frame_start, frame_end, frame_window):
+        # find the best alignment
         if self.verbose >= 3:
-            plt.bar(range(len(frame_pulses)), frame_pulses)
+            # the expected bitstream
+            gold_msg = msg2bin(msg, self.osr) * 0.5
+
+            # correlate to find best alignment
+            (i, xc) = n_xcorr(np.array(frame_window), np.array(gold_msg))
+            n = len(gold_msg)
+
+            # make plot
+            fig, axs = plt.subplots(2)
+            fig.suptitle('Alignment')
+            axs[0].plot(range(n), gold_msg, range(n), frame_window[i:i+n])
+            axs[0].set(xlabel='Sample', ylabel='Magnitude')
+            axs[1].plot(xc[0:2*self.osr])
+            axs[1].set(xlabel='Offset', ylabel='Normalised cross correlation')
             plt.show()
 
     def _debug_msg(self, msg):
@@ -274,7 +310,7 @@ class SDRFileReader(object):
             if len(cdata) == 0:
                 break
             if self.downsample > 1:
-                cdata = scipy.signal.decimate(cdata, self.downsample)
+                cdata = sig.decimate(cdata, self.downsample)
             self._read_callback(cdata, None)
 
 

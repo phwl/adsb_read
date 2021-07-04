@@ -1,11 +1,14 @@
 # adsb_read
 
-Reads iq samples from a file or stdin, capturing ADS-B packets. This code is derived
+Reads iq samples from Pluto, a file or stdin, capturing ADS-B packets. This code is derived
 from [pyModeS](https://pypi.org/project/pyModeS/) and allows sampling
 at higher sample rates (via the osr option), upsampling of the original
 input (for testing) and saving of buffers.
 
-To run (you need to install [rx_tools](https://github.com/rxseger/rx_tools) first), you acquire IQ samples and pipe them to this program using the following command line:
+![xcorr](xcorr.png)
+
+To run just look at the Makefile (or type "make run").
+
 ``` bash
 $ ../sdr/rx_tools/rx_sdr -d rtlsdr -f 1090000000 -s 2000000 - |python iqreader.py - -o x
 Found Rafael Micro R820T tuner
