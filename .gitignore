@@ -9,6 +9,7 @@
 **/*.out
 **/*.iq
 **/*.a
+**/*.bin
 rx_fm
 rx_power
 rx_sdr
