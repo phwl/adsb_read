@@ -35,7 +35,7 @@ class SDRFileReader(object):
         self.upsample = args.upsample       # replicates incoming data 
         self.downsample = args.downsample   # decimates incoming data
         self.osr = args.osr                 # oversampling ratio
-        self.verbose = args.verbose         # verbose mode
+        self.verbose = args.verbose         # verbose mode 1=print decoded squitter, 2=stats, 3=plot
 
         # find input source
         self.ofile = self.args.ofile
@@ -103,7 +103,7 @@ class SDRFileReader(object):
 
         buffer_length = len(self.signal_buffer)
 
-        if self.verbose > 1:
+        if self.verbose >= 2:
             print("# self.noise_floor:  ", self.noise_floor)
             print("# self.signal_buffer:  mean", stats.mean(self.signal_buffer), 
                   "std:", stats.stdev(self.signal_buffer))
@@ -140,9 +140,6 @@ class SDRFileReader(object):
 
                     msgbin.append(c)
 
-                # advance i with a jump
-                i = frame_start + j
-
                 if len(msgbin) > 0:
                     msghex = pms.bin2hex("".join([str(i) for i in msgbin]))
                     self._debug_msg(msghex)
@@ -150,11 +147,13 @@ class SDRFileReader(object):
                         self.frames = self.frames + 1
                         messages.append([msghex, time.time()])
                         self._good_msg(msghex, frame_start, frame_end, frame_pulses)
+                    else:
+                        i += 1
+                        continue
 
+                # advance i with a jump
+                i = frame_start + j
 
-            # elif i > buffer_length - 500:
-            #     # save some for next process
-            #     break
             else:
                 i += 1
 
@@ -218,7 +217,7 @@ class SDRFileReader(object):
             return True
 
     def _good_msg(self, msg, frame_start, frame_end, frame_pulses):
-        if self.verbose > 2:
+        if self.verbose >= 3:
             plt.bar(range(len(frame_pulses)), frame_pulses)
             plt.show()
 
@@ -232,10 +231,10 @@ class SDRFileReader(object):
                 print(self.frames, ":", msg, pms.icao(msg))
             elif df in [4, 5, 11] and msglen == 14:
                 print(self.frames, ":", msg, pms.icao(msg))
-            if self.verbose > 0:
+            if self.verbose >= 1:
                 pms.tell(msg)
                 print()
-        elif self.debug > 0:
+        elif self.debug:
             print("X", ":", msg)
 
 
@@ -308,7 +307,7 @@ if __name__ == "__main__":
 
     signal.signal(signal.SIGINT, rtl.stop)
 
-    rtl.debug = True
+    rtl.debug = False
 
     if (args.profile):
         import cProfile
