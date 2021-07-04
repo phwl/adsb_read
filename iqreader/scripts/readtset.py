@@ -9,6 +9,7 @@ for filename in os.listdir(dir):
         fname = (os.path.join(dir, filename))
         with open(fname, 'rb') as f:
            data = pickle.load(f)
+           print(data[0][0])
            dataset = dataset + data
            print(fname, len(data), len(dataset))
 

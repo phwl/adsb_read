@@ -268,7 +268,7 @@ class SDRFileReader(object):
         # generate DNN training vector
         n = len(gold_msg)
         d_in = iq_window[besti:besti+n]
-        d_out = pms.icao(msg)
+        d_out = msg
         dtime = str(datetime.now())
 
         self.tdata.append((dtime, d_in, d_out))
