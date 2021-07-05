@@ -5,7 +5,7 @@ from [pyModeS](https://pypi.org/project/pyModeS/) and allows sampling
 at higher sample rates (via the osr option), upsampling of the original
 input (for testing), saving of buffers etc.
 
-An example of usage with the Pluto is given below. We use osr=4 so the sampling rate is 4x nominal i.e. 4*2MHz=8MHz, and specify that the output training set is written to ```/srv/breamdisk/adsb-data/x1-*```. Note that the program never overwrites files in this mode so in the example, the output is written to ```/srv/breamdisk/adsb-data/x1-1700-tdata.bin``` because that was the first new file name.
+An example of usage with the Pluto is given below. We use osr=4 so the sampling rate is 4x nominal i.e. 4*2MHz=8MHz, and specify that the output training set is written to ```/srv/breamdisk/adsb-data/x1-*```. Note that the program never overwrites files in this mode so in the example, the output is written to ```/srv/breamdisk/adsb-data/x1-1700-tdata.bin``` because that was the first new file name. The numbered outputs show the ADS-B messages received.
 
 ``` bash
 $ ./adsb_read.py --osr 4 -v -t /srv/breamdisk/adsb-data/x1
@@ -72,8 +72,21 @@ file: /srv/breamdisk/adsb-data/x1-1702-tdata.bin 3 11275
         ICAO address: 7C6C80 
      Downlink Format: 4 
 
-Total records= 11340 verified= 11298
-Total file size 200.200867M
+...
+
+2021-07-05 16:11:02.323771
+             Message: 8D7C6CA0582155E8485A5E85313D 
+        ICAO address: 7C6CA0 
+     Downlink Format: 17 
+            Protocol: Mode-S Extended Squitter (ADS-B) 
+                Type: Airborne position (with barometric altitude) 
+          CPR format: Odd 
+        CPR Latitude: 0.476837158203125 
+       CPR Longitude: 0.1764984130859375 
+            Altitude: 5525 feet
+
+Total records= 11693 verified= 11659
+Total file size 206.787667M
 ```
 
 If you set the verbosity to 4 or more (```$ ./gentset.py -vvvv```), a plot of the waveforms as illustrated below is given.
