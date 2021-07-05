@@ -29,6 +29,7 @@ An example of how to read the data is available in ```scripts/gentset.py```.
 
 ```bash
 $ scripts/gentset.py
+...
 file: /srv/breamdisk/adsb-data/x1-1700-tdata.bin 2 11269
 2021-07-05 15:51:20.880429
              Message: 20100120E3DAF4 
@@ -39,41 +40,7 @@ file: /srv/breamdisk/adsb-data/x1-1700-tdata.bin 2 11269
              Message: 284844283BB1D1 
         ICAO address: BA9C8B 
      Downlink Format: 5 
-
-file: /srv/breamdisk/adsb-data/x1-1701-tdata.bin 3 11272
-2021-07-05 15:51:49.899882
-             Message: 582BA19BFDE456 
-        ICAO address: 2BA19B 
-     Downlink Format: 11 
-
-2021-07-05 15:51:59.776346
-             Message: 20000122F3DAF4 
-        ICAO address: 7C6C80 
-     Downlink Format: 4 
-
-2021-07-05 15:52:04.995693
-             Message: 20000522CBECF4 
-        ICAO address: 7C6C80 
-     Downlink Format: 4 
-
-file: /srv/breamdisk/adsb-data/x1-1702-tdata.bin 3 11275
-2021-07-05 15:52:26.143471
-             Message: 284108082C3366 
-        ICAO address: FB7BD7 
-     Downlink Format: 5 
-
-2021-07-05 15:52:38.548790
-             Message: 24040722D3DAD4 
-        ICAO address: E0E5E8 
-     Downlink Format: 4 
-
-2021-07-05 15:52:42.032132
-             Message: 20000122F3DAF4 
-        ICAO address: 7C6C80 
-     Downlink Format: 4 
-
 ...
-
 2021-07-05 16:11:02.323771
              Message: 8D7C6CA0582155E8485A5E85313D 
         ICAO address: 7C6CA0 
