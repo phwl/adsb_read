@@ -48,4 +48,4 @@ if __name__ == "__main__":
     dir='/srv/breamdisk/adsb-data/'
     fname = 'tdata.bin'
     dataset = readdir(dir)
-    writedata(fname, dataset)
+    # writedata(fname, dataset)

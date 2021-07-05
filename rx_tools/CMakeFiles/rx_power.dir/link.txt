@@ -1,1 +1,0 @@
-/usr/bin/cc -O3 -DNDEBUG  -rdynamic CMakeFiles/rx_power.dir/src/rtl_power.c.o  -o rx_power -Wl,-rpath,/usr/local/lib: /usr/local/lib/libSoapySDR.so.0.8.1 -lm -lpthread libcommon.a -pthread 

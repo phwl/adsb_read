@@ -1,2 +1,0 @@
-/usr/bin/ar qc libcommon.a  CMakeFiles/common.dir/src/convenience/convenience.c.o
-/usr/bin/ranlib libcommon.a
