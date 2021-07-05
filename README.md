@@ -56,7 +56,7 @@ Total records= 11693 verified= 11659
 Total file size 206.787667M
 ```
 
-If you set the verbosity to 4 or more (```$ ./gentset.py -vvvv```), a plot of the waveforms as illustrated below is given.
+If you set the verbosity to 4 or more (```$ ./gentset.py -vvvv```), a plot of the waveforms as illustrated below is given. The plot shows the first 200 samples of a squitter with the received waveform in orange, and the ideal waveform in blue.
 ![match_plot](match_plot.png)
 
 Try ```python adsb_read.py -h``` to see all the options.
