@@ -25,9 +25,10 @@ Writing training file to /srv/breamdisk/adsb-data/x1-1702-tdata.bin
 9 : 280008082C0822 7C6C80
 '''
 
-An example of how to read the data is available in ```scripts/gentset.py'''
+An example of how to read the data is available in ```scripts/gentset.py'''.
+
 ```
-$ ./gentset.py
+$ scripts/gentset.py
 file: /srv/breamdisk/adsb-data/x1-1700-tdata.bin 2 11269
 2021-07-05 15:51:20.880429
              Message: 20100120E3DAF4 
