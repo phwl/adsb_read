@@ -86,7 +86,7 @@ class SDRFileReader(object):
         # sample related parameters
         self.sampling_rate = 2e6 * self.osr
         self.samples_per_microsec = 2 * self.osr
-        self.buffer_size = 1024 * 256 * self.osr
+        self.buffer_size = 1024 * 2560 * self.osr
         self.read_size = self.buffer_size // 2
 
         # set up SDR (if we have one)
@@ -338,7 +338,7 @@ class SDRFileReader(object):
             if self.ifile == None:
                 cdata = self.sdr.recv_num_samps(
                         self.read_size, modes_frequency, self.sampling_rate, 
-                        [0], 100).flatten() * 30
+                        [0], 73).flatten() * 32
                 
             else:
                 iqdata = self.fd.read(self.read_size)
