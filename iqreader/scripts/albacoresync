@@ -1,0 +1,1 @@
+rsync -av /Volumes/srv/breamdisk/adsb-data/ phwl@albacore.staff.sydney.edu.au:data/adsb-data
