@@ -5,7 +5,7 @@ from [pyModeS](https://pypi.org/project/pyModeS/) and allows sampling
 at higher sample rates (via the osr option), upsampling of the original
 input (for testing), saving of buffers etc.
 
-To understand how to use the program take a look at the Makefile. An example of running using the Pluto is given below. In the example, we use 4x the nominal sampling rate i.e. 4*2MHz=8MHz, and specify that the output training set is written to /srv/breamdisk/adsb-data/x1-*. Note that the program never overwrites files in this mode so in the sample, the first output is written to /srv/breamdisk/adsb-data/x1-1700-tdata.bin because that was the first new file name.
+An example of usage with the Pluto is given below. We use ```osr=4''' so the sampling rate is 4x nominal i.e. 4*2MHz=8MHz, and specify that the output training set is written to /srv/breamdisk/adsb-data/x1-*. Note that the program never overwrites files in this mode so in the example, the output is written to ```/srv/breamdisk/adsb-data/x1-1700-tdata.bin''' because that was the first new file name.
 
 ``` bash
 $ ./adsb_read.py --osr 4 -v -t /srv/breamdisk/adsb-data/x1
@@ -79,4 +79,5 @@ If you set the verbosity to 4 or more (```$ ./gentset.py -vvvv'''), a plot of th
 ![match_plot](match_plot.png)
 
 Try 'python adsb_read.py -h' to see all the options.
+To understand how to use the program take a look at the Makefile. 
 
