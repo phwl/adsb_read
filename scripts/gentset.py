@@ -1,4 +1,7 @@
 #!/home/phwl/anaconda3/bin/python
+
+# generate a test set for NN training
+
 import pickle
 import numpy as np
 import os
@@ -7,8 +10,8 @@ import math
 import pyModeS as pms
 from ADSBwave import *
 
-def readdir(dir):
-    wave = ADSBwave(osr=4)
+def readdir(dir, verbose=0):
+    wave = ADSBwave(osr=4, verbose=verbose)
     fsize = 0
     verified = 0
     dataset = []
@@ -25,11 +28,11 @@ def readdir(dir):
                for x in data:
                    (dtime, d_in, d_out) = x
                    print(dtime)
+                   v = wave.verify(d_in, d_out)
+                   if v:
+                       verified += 1
                    try:
                        pms.tell(d_out)
-                       v = wave.verify(d_in, d_out)
-                       if v:
-                           verified += 1
                    except:
                        #import pdb; pdb.set_trace()
                        print('Verify FAILED')
@@ -45,7 +48,14 @@ def writedata(fname, dataset):
         pickle.dump(dataset, fd)
 
 if __name__ == "__main__":
+    import argparse
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-v', '--verbose', action='count', default=0,
+                        help='Verbose mode')
+    args = parser.parse_args()
+
     dir='/srv/breamdisk/adsb-data/'
     fname = 'tdata.bin'
-    dataset = readdir(dir)
+    dataset = readdir(dir, verbose=args.verbose)
     # writedata(fname, dataset)

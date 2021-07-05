@@ -81,7 +81,6 @@ class ADSBwave(object):
         # oversampling rate is the rate above the minimum 2 MHz one
         osr = self.osr
 
-        msghex = ""
         signal_buffer = np.absolute(cdata)
         if self._check_preamble(signal_buffer[0:pbits * 2 * osr]):
             frame_start = pbits * 2 * osr
@@ -149,7 +148,7 @@ class ADSBwave(object):
         frame_window = amp = np.absolute(iq_window)
 
         # generate the expected time domain waveform from the message
-        gold_msg = msg2bin(msg, self.osr) * 0.5
+        gold_msg = msg2bin(msg, self.osr) * max(frame_window)
 
         # correlate gold message to find best alignment
         besti = 0
@@ -160,7 +159,6 @@ class ADSBwave(object):
         if self.verbose >= 4:
             # make plot
             plt.plot(range(n), gold_msg, range(n), frame_window[besti:besti+n])
-            plt.set(xlabel='Sample', ylabel='Magnitude')
             plt.show()
 
     def _debug_msg(self, msg):
