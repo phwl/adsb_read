@@ -5,7 +5,7 @@ from [pyModeS](https://pypi.org/project/pyModeS/) and allows sampling
 at higher sample rates (via the osr option), upsampling of the original
 input (for testing), saving of buffers etc.
 
-An example of usage with the Pluto is given below. We use ```osr=4''' so the sampling rate is 4x nominal i.e. 4*2MHz=8MHz, and specify that the output training set is written to /srv/breamdisk/adsb-data/x1-*. Note that the program never overwrites files in this mode so in the example, the output is written to ```/srv/breamdisk/adsb-data/x1-1700-tdata.bin''' because that was the first new file name.
+An example of usage with the Pluto is given below. We use osr=4 so the sampling rate is 4x nominal i.e. 4*2MHz=8MHz, and specify that the output training set is written to /srv/breamdisk/adsb-data/x1-*. Note that the program never overwrites files in this mode so in the example, the output is written to /srv/breamdisk/adsb-data/x1-1700-tdata.bin because that was the first new file name.
 
 ``` bash
 $ ./adsb_read.py --osr 4 -v -t /srv/breamdisk/adsb-data/x1
