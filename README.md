@@ -5,7 +5,7 @@ from [pyModeS](https://pypi.org/project/pyModeS/) and allows sampling
 at higher sample rates (via the osr option), upsampling of the original
 input (for testing), saving of buffers etc.
 
-An example of usage with the Pluto is given below. We use osr=4 so the sampling rate is 4x nominal i.e. 4*2MHz=8MHz, and specify that the output training set is written to /srv/breamdisk/adsb-data/x1-*. Note that the program never overwrites files in this mode so in the example, the output is written to /srv/breamdisk/adsb-data/x1-1700-tdata.bin because that was the first new file name.
+An example of usage with the Pluto is given below. We use osr=4 so the sampling rate is 4x nominal i.e. 4*2MHz=8MHz, and specify that the output training set is written to ```/srv/breamdisk/adsb-data/x1-*```. Note that the program never overwrites files in this mode so in the example, the output is written to ```/srv/breamdisk/adsb-data/x1-1700-tdata.bin``` because that was the first new file name.
 
 ``` bash
 $ ./adsb_read.py --osr 4 -v -t /srv/breamdisk/adsb-data/x1
@@ -23,9 +23,9 @@ Writing training file to /srv/breamdisk/adsb-data/x1-1701-tdata.bin
 Writing training file to /srv/breamdisk/adsb-data/x1-1702-tdata.bin
 8 : 20000122F3DAF4 7C6C80
 9 : 280008082C0822 7C6C80
-'''
+```
 
-An example of how to read the data is available in scripts/gentset.py.
+An example of how to read the data is available in ```scripts/gentset.py```.
 
 ```bash
 $ scripts/gentset.py
@@ -76,9 +76,9 @@ Total records= 11340 verified= 11298
 Total file size 200.200867M
 ```
 
-If you set the verbosity to 4 or more (```$ ./gentset.py -vvvv'''), a plot of the waveforms as illustrated below is given.
+If you set the verbosity to 4 or more (```$ ./gentset.py -vvvv```), a plot of the waveforms as illustrated below is given.
 ![match_plot](match_plot.png)
 
-Try 'python adsb_read.py -h' to see all the options.
+Try ```python adsb_read.py -h``` to see all the options.
 To understand how to use the program take a look at the Makefile. 
 
