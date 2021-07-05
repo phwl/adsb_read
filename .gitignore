@@ -2,14 +2,12 @@
 *.dSYM
 *.iq
 *-iqindex.txt
+*.bin
+*.iq
+*.out
+*.a
 
 .*.swp
-
-**/*.o
-**/*.out
-**/*.iq
-**/*.a
-**/*.bin
 rx_fm
 rx_power
 rx_sdr
