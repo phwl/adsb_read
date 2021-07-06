@@ -1,0 +1,3 @@
+rsync -av alee0621@allie.staff.sydney.edu.au:phwl/adsb_read/adsb-data/b210-j03 /Volumes/srv/breamdisk/adsb-data/ 
+rsync -av /Volumes/srv/breamdisk/adsb-data/ phwl@albacore.staff.sydney.edu.au:data/adsb-data
+rsync -av /Volumes/srv/breamdisk/adsb-data/  alee0621@allie.staff.sydney.edu.au:adsb-data
