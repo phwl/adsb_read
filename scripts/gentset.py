@@ -10,6 +10,7 @@ import math
 import pyModeS as pms
 from ADSBwave import *
 
+# read and decode all .bin files in the directory, 
 def readdir(dir, verbose=0):
     wave = ADSBwave(osr=4, verbose=verbose)
     fsize = 0
@@ -42,10 +43,12 @@ def readdir(dir, verbose=0):
     print("Total file size", eng_string(fsize, si=True))
     return dataset
 
+# call readdir for all subdirectories of rootdir
 def dirwalk(rootdir, verbose=0):
     for dirname in os.listdir(rootdir):
         readdir("{}/{}".format(rootdir, dirname), verbose)
 
+# write dataset to a file 
 def writedata(fname, dataset):
     print("Writing training file to", fname)
     with open(fname, "wb") as fd:
