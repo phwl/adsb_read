@@ -42,6 +42,10 @@ def readdir(dir, verbose=0):
     print("Total file size", eng_string(fsize, si=True))
     return dataset
 
+def dirwalk(rootdir, verbose=0):
+    for dirname in os.listdir(rootdir):
+        readdir("{}/{}".format(rootdir, dirname), verbose)
+
 def writedata(fname, dataset):
     print("Writing training file to", fname)
     with open(fname, "wb") as fd:
@@ -53,9 +57,9 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('-v', '--verbose', action='count', default=0,
                         help='Verbose mode')
+    parser.add_argument('dirname')
     args = parser.parse_args()
 
-    dir='/srv/breamdisk/adsb-data/pluto-PLsplace/'
     fname = 'tdata.bin'
-    dataset = readdir(dir, verbose=args.verbose)
+    dataset = dirwalk(args.dirname, verbose=args.verbose)
     # writedata(fname, dataset)
