@@ -55,7 +55,7 @@ if __name__ == "__main__":
                         help='Verbose mode')
     args = parser.parse_args()
 
-    dir='/srv/breamdisk/adsb-data/'
+    dir='/srv/breamdisk/adsb-data/pluto-PLsplace/'
     fname = 'tdata.bin'
     dataset = readdir(dir, verbose=args.verbose)
     # writedata(fname, dataset)
