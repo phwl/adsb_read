@@ -15,7 +15,7 @@ run_pluto:
 
 run_uhd:
 	# uhd dies after a few hours (maybe because machine is too slow), run in infinite loop
-	./doloop ./adsb_read-uhd.py -v --osr 4 -t $(J03DATALOC)./adsb-data/b210-j03/a1
+	./doloop ./adsb_read-uhd.py -v --osr 4 -t $(J03DATALOC)/adsb-data/b210-j03/a1
 
 run_rx_sdr:
 	../rx_tools/rx_sdr -d rtlsdr -f 1090000000 -s 2000000 -g 40.2 - |python adsb_read.py -i - -o x
