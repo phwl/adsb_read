@@ -5,7 +5,6 @@ import pyModeS as pms
 import sys
 from datetime import datetime
 import scipy.signal as sig
-import matplotlib.pyplot as plt
 import statistics as stats
 
 def eng_string( x, format='%s', si=False):
@@ -61,14 +60,21 @@ preamble = [1, 0, 1, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0]
 th_amp_diff = 0.8   # signal amplitude threshold difference between 0 and 1 bit
 
 class ADSBwave(object):
-    def __init__(self, osr=1, verbose=0):
+    def __init__(self, osr=1, verbose=0, lfp=None):
         super(ADSBwave, self).__init__()
         self.osr = osr                 # oversampling ratio
         self.verbose = verbose         # verbose mode 1=print decoded squitter, 2=stats, 3=plot
         self.debug = 0         
         self.preamble = replicate(preamble, self.osr)
         self.preamble_len = len(self.preamble)
+        self.lfp = lfp
 
+    def _print(self, msg):
+        if self.lfp is None:
+            print(msg)
+        else:
+            print(msg, file=self.lfp)
+            
     def verify(self, cdata, xmsg):
         return self.decode(cdata) == xmsg
 
@@ -114,11 +120,11 @@ class ADSBwave(object):
                 if self._check_msg(msghex):     # we have a good message
                     self._good_msg(msghex, cdata)
                 else:
-                    print('Verify: failed check_msg')
+                    self._print('Verify: failed check_msg')
             else:
-                print('Verify: len(msgbin) <= 0')
+                self._print('Verify: len(msgbin) <= 0')
         else:
-            print('Verify: No preamble')
+            self._print('Verify: No preamble')
 
         return msghex
 
@@ -158,6 +164,8 @@ class ADSBwave(object):
 
         if self.verbose >= 4:
             # make plot
+            import matplotlib.pyplot as plt
+
             plt.plot(range(n), gold_msg, range(n), frame_window[besti:besti+n])
             plt.show()
 
