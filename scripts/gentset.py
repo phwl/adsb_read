@@ -222,9 +222,14 @@ def dirwalk(rootdir, lfp, verbose=0, osr=4):
     return dataset
                 
 # write dataset to a file 
-def writedata(fname, dataset):
-    with open(fname, "wb") as fd:
-        pickle.dump(dataset, fd)
+def writedata(fname, dataset, trunc=None):
+
+    if trunc is None:
+        with open(fname, "wb") as fd:
+            pickle.dump(dataset, fd)
+    else:
+        with open(fname, "wb") as fd:
+            pickle.dump(dataset[:trunc], fd)
 
     fsize = os.path.getsize(fname)
     print(f"Wrote training file of size {eng_string(fsize, format='%.3f', si=True)} to {fname}.")
@@ -238,6 +243,9 @@ if __name__ == "__main__":
     parser.add_argument('-d', '--dirname', type=str, default='.', help='Root directory wherre to find the raw adsb data files in .bin format')
     parser.add_argument('--osr', action='store', type=int, default=4,
                         help='Over-Sampling Rate')
+    parser.add_argument('--trunc', action='store', type=int, default=None,
+                    help='Truncate the output to create a shiorter file for debugging')
+
     parser.add_argument('-w', '--write', action='store_true', default=False,
                         help='Write out validate data to ONAME')
     parser.add_argument('--oname', action='store', type=str, default='tdata.bin',
@@ -249,7 +257,7 @@ if __name__ == "__main__":
     with open(cargs.logfile, 'w') as lfp:
         dataset = dirwalk(cargs.dirname, lfp, verbose=cargs.verbose, osr=cargs.osr)
         if cargs.write:
-            writedata(cargs.oname, dataset)
+            writedata(cargs.oname, dataset, cargs.trunc)
     
     exit(0)
     
