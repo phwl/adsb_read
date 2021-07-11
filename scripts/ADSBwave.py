@@ -23,6 +23,9 @@ def eng_string( x, format='%s', si=False):
           1230.0 => 1.23k
       -1230000.0 => -1.23M
     '''
+    if x == 0:
+        return '0'
+
     sign = ''
     if x < 0:
         x = -x
@@ -121,6 +124,7 @@ class ADSBwave(object):
                     self._good_msg(msghex, cdata)
                 else:
                     self._print('Verify: failed check_msg')
+                    return None
             else:
                 self._print('Verify: len(msgbin) <= 0')
         else:
@@ -149,6 +153,8 @@ class ADSBwave(object):
         elif df in [4, 5, 11] and msglen == 14:
             return True
 
+        return False
+        
     def _good_msg(self, msg, iq_window):
         # iq_window are our raw samples find the best alignment
         frame_window = amp = np.absolute(iq_window)

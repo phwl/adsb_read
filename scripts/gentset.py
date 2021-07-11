@@ -9,6 +9,7 @@ import re
 import math
 import pyModeS as pms
 from ADSBwave import *
+import pdb
 
 def mytell(msg, lfp):
     from pyModeS import common, adsb, commb, bds
@@ -161,10 +162,12 @@ def readdir(dir, lfp, verbose=0, osr=4):
     verified = 0
     failed = 0
     dataset = []
+    print(f"Exploring Directory: {dir}:", file=lfp)
     dirfiles = os.listdir(dir)
-    dirfiles.sort(key=lambda f: int(re.sub('\D', '', f)))
+    #dirfiles.sort(key=lambda f: int(re.sub('\D', '', f)))
+    dirfiles_sorted = sorted(dirfiles)
 
-    for filename in dirfiles:
+    for filename in dirfiles_sorted:
         if filename.endswith(".bin"):
             fcount += 1
             fname = (os.path.join(dir, filename))
@@ -181,14 +184,16 @@ def readdir(dir, lfp, verbose=0, osr=4):
                     if v:
                         verified += 1
                         valid_data.append((dtime, d_in, d_out))
+                    else:
+                        failed += 1
+                        
                     try:
                         #pms.tell(d_out)
                         if verbose > 0:
                             mytell(d_out, lfp)
-                            
+                        pass    
                     except:
                         #import pdb; pdb.set_trace()
-                        failed += 1
                         pass
                     print(file=lfp)
                     
@@ -196,9 +201,9 @@ def readdir(dir, lfp, verbose=0, osr=4):
 
                 dataset = dataset + valid_data
 
-    print("Total files=", fcount)
-    print("Total records=", len(dataset), 'verified=', verified)
-    print("Total file size", eng_string(fsize, si=True))
+    print(f"\nFound {fcount} .bin files in {dir}")
+    print("Total records=", len(dataset), 'verified=', verified, 'failed=', failed)
+    print("Total file size", eng_string(fsize, format='%.3f', si=True))
     return dataset
 
 # call readdir for all subdirectories of rootdir
@@ -206,9 +211,10 @@ def dirwalk(rootdir, lfp, verbose=0, osr=4):
 
     dataset = []
     for dirname in os.listdir(rootdir):
-        if os.path.isdir(dirname):
+        print(f"Checking: {dirname} in {rootdir}", file=lfp)
+        if os.path.isdir(f"{rootdir}/{dirname}"):
             print(f"reading from: {dirname} in {rootdir}", file=lfp)
-            dataset += readdir("{}/{}".format(rootdir, dirname), lfp, verbose=verbose, osr=osr)
+            dataset += readdir(f"{rootdir}/{dirname}", lfp, verbose=verbose, osr=osr)
 
     print(f"reading from: {rootdir}", file=lfp)
     dataset += readdir(rootdir, lfp, verbose=verbose, osr=osr)
@@ -217,10 +223,12 @@ def dirwalk(rootdir, lfp, verbose=0, osr=4):
                 
 # write dataset to a file 
 def writedata(fname, dataset):
-    print(f"Writing training file to {fname}")
     with open(fname, "wb") as fd:
         pickle.dump(dataset, fd)
 
+    fsize = os.path.getsize(fname)
+    print(f"Wrote training file of size {eng_string(fsize, format='%.3f', si=True)} to {fname}.")
+    
 if __name__ == "__main__":
     import argparse
 
