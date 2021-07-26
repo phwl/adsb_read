@@ -4,7 +4,7 @@
 
 import pickle
 import numpy as np
-import os
+import os, gc
 import re
 import math
 import pyModeS as pms
@@ -155,9 +155,12 @@ def mytell(msg, lfp):
             _print("Radio height", commb.rh45(msg), "feet")
 
 # read and decode all .bin files in the directory, 
-def readdir(dir, lfp, verbose=0, osr=4):
-    wave = ADSBwave(osr=osr, verbose=verbose, lfp=lfp)
+def readdir(dir, lfp, verbose=0, osr=4, wave=None):
+    if wave is None:
+        wave = ADSBwave(osr=osr, verbose=verbose, lfp=lfp)
+        
     fsize = 0
+
     fcount = 0
     verified = 0
     failed = 0
@@ -168,18 +171,19 @@ def readdir(dir, lfp, verbose=0, osr=4):
     dirfiles_sorted = sorted(dirfiles)
 
     for filename in dirfiles_sorted:
-        if filename.endswith(".bin"):
-            fcount += 1
+        if filename.endswith(".bin"):            
+            fcount += 1            
             fname = (os.path.join(dir, filename))
             fsize += os.path.getsize(fname)
             with open(fname, 'rb') as f:
                 data = pickle.load(f)
-                print(f"file: {fname} {len(data)} {len(dataset)}", file=lfp)
-                fstr = f"file: {fname} {len(data)} {len(dataset)}"
+                print(f"file({fcount}): {fname} {len(data)} {len(dataset)}", file=lfp)
+                fstr = f"file({fcount}): {fname} {len(data)} {len(dataset)}"
                 valid_data = []
                 for x in data:
                     (dtime, d_in, d_out) = x
-                    print(dtime, file=lfp)
+                    if verbose > 0:
+                        print(dtime, file=lfp)
                     v = wave.verify(d_in, d_out)
                     if v:
                         verified += 1
@@ -195,44 +199,84 @@ def readdir(dir, lfp, verbose=0, osr=4):
                     except:
                         #import pdb; pdb.set_trace()
                         pass
-                    print(file=lfp)
+                        
+                    if verbose > 0:
+                        print(file=lfp)
                     
                     print(f"\r{fstr} - Verified: {verified}, Failed: {failed}        ", end='')
 
                 dataset = dataset + valid_data
 
     print(f"\nFound {fcount} .bin files in {dir}")
-    print("Total records=", len(dataset), 'verified=', verified, 'failed=', failed)
-    print("Total file size", eng_string(fsize, format='%.3f', si=True))
-    return dataset
+    print(f"Total records={len(dataset)} verified={verified} failed={failed}")
+    print(f"Total file size {eng_string(fsize, format='%.3f', si=True)}")
+
+    print(f"\nFound {fcount} .bin files in {dir}", file=lfp)
+    print(f"Total records={len(dataset)} verified={verified} failed={failed}", file=lfp)
+    print(f"Total file size {eng_string(fsize, format='%.3f', si=True)}", file=lfp, flush=True)
+
+    return dataset, fcount
 
 # call readdir for all subdirectories of rootdir
-def dirwalk(rootdir, lfp, verbose=0, osr=4):
+def dirwalk(rootdir, lfp, verbose=0, osr=4, save_by_dir=None):
 
+    wave = ADSBwave(osr=osr, verbose=verbose, lfp=lfp)
+    fcount = 0
+    
     dataset = []
     for dirname in os.listdir(rootdir):
         print(f"Checking: {dirname} in {rootdir}", file=lfp)
         if os.path.isdir(f"{rootdir}/{dirname}"):
             print(f"reading from: {dirname} in {rootdir}", file=lfp)
-            dataset += readdir(f"{rootdir}/{dirname}", lfp, verbose=verbose, osr=osr)
+            r_dataset, r_fcount = readdir(f"{rootdir}/{dirname}", lfp, verbose=verbose, osr=osr, wave=wave)
+            
+            if save_by_dir is None:
+                print(f"Appending dataset: {rootdir}", file=lfp, flush=True)
+                dataset += r_dataset
+            elif len(r_dataset) > 0:
+                fname = f"{save_by_dir}_{dirname}.bin"
+                writedata(fname, lfp, r_dataset)  
+                
+                # Force GC
+                r_dataset = None
+                gc.collect()
+                
+            fcount += r_fcount
 
     print(f"reading from: {rootdir}", file=lfp)
-    dataset += readdir(rootdir, lfp, verbose=verbose, osr=osr)
+    r_dataset, r_fcount = readdir(rootdir, lfp, verbose=verbose, osr=osr, wave=wave)
+    fcount += r_fcount
+    print(f"Total of {fcount} records read.", file=lfp, flush=True)
 
-    return dataset
+    if save_by_dir is None:
+        print(f"Appending dataset: {rootdir}", file=lfp, flush=True)
+        dataset += r_dataset
+
+        return dataset
+        
+    elif len(r_dataset) > 0:
+        fname = f"{save_by_dir}_{rootdir}.bin"
+        writedata(fname, lfp, r_dataset)  
+        
+        return
                 
 # write dataset to a file 
-def writedata(fname, dataset, trunc=None):
+def writedata(fname, lfp, dataset, trunc=None):
 
     if trunc is None:
+        print(f"Saving data to: {fname}.", file=lfp, flush=True)
+        print(f"Saving data to: {fname}.", flush=True)
         with open(fname, "wb") as fd:
             pickle.dump(dataset, fd)
     else:
+        print(f"Saving truncated data to: {fname}.", file=lfp, flush=True)
+        print(f"Saving truncated data to: {fname}.", flush=True)
         with open(fname, "wb") as fd:
             pickle.dump(dataset[:trunc], fd)
 
     fsize = os.path.getsize(fname)
-    print(f"Wrote training file of size {eng_string(fsize, format='%.3f', si=True)} to {fname}.")
+    print(f"Wrote training file of size {eng_string(fsize, format='%.3f', si=True)} to {fname}.", file=lfp, flush=True)
+    print(f"Wrote training file of size {eng_string(fsize, format='%.3f', si=True)} to {fname}.", flush=True)
     
 if __name__ == "__main__":
     import argparse
@@ -246,6 +290,9 @@ if __name__ == "__main__":
     parser.add_argument('--trunc', action='store', type=int, default=None,
                     help='Truncate the output to create a shiorter file for debugging')
 
+    parser.add_argument('-D', '--save_by_dir', action='store_true', default=False,
+                        help='Save data by directory name in which they are found')
+
     parser.add_argument('-w', '--write', action='store_true', default=False,
                         help='Write out validate data to ONAME')
     parser.add_argument('--oname', action='store', type=str, default='tdata.bin',
@@ -255,9 +302,17 @@ if __name__ == "__main__":
     cargs = parser.parse_args()
 
     with open(cargs.logfile, 'w') as lfp:
-        dataset = dirwalk(cargs.dirname, lfp, verbose=cargs.verbose, osr=cargs.osr)
-        if cargs.write:
-            writedata(cargs.oname, dataset, cargs.trunc)
+        if cargs.save_by_dir:
+            sbd = cargs.oname
+            dirwalk(cargs.dirname, lfp, verbose=cargs.verbose, osr=cargs.osr, save_by_dir=sbd)        
+        else:
+            dataset = dirwalk(cargs.dirname, lfp, verbose=cargs.verbose, osr=cargs.osr)
+            if cargs.write:
+                writedata(cargs.oname, lfp, dataset, cargs.trunc)
+
+        print(f"Completed OK!", file=lfp, flush=True)
+        
+    print(f"Completed OK.", flush=True)
     
     exit(0)
     

@@ -123,7 +123,8 @@ class ADSBwave(object):
                 if self._check_msg(msghex):     # we have a good message
                     self._good_msg(msghex, cdata)
                 else:
-                    self._print('Verify: failed check_msg')
+                    if self.verbose > 0:
+                        self._print('Verify: failed check_msg')
                     return None
             else:
                 self._print('Verify: len(msgbin) <= 0')
