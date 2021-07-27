@@ -13,7 +13,7 @@ import pyModeS as pms
 from ADSBwave import *
 import pdb
 
-def mkdircp(src, dstdir, dirname, ex=True):
+def mkdircp(src, dstdir, dirname, ex=False):
     dstdir = dstdir + '/' + dirname
     if not os.path.isdir(dstdir):
         print('os.mkdir({})'.format(dstdir))
