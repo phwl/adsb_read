@@ -2,13 +2,16 @@
 
 # generate a test set for NN training
 
-import pickle
+import pickle, h5py
 import numpy as np
 import os, gc
 import re
 import math
 import pyModeS as pms
 from ADSBwave import *
+sys.path.append('../../CruxML_DNN')
+import utils.adsb_decoder as adsb_dec
+from tqdm import tqdm
 import pdb
 
 def mytell(msg, lfp):
@@ -169,15 +172,20 @@ def readdir(dir, lfp, verbose=0, osr=4, wave=None):
     dirfiles = os.listdir(dir)
     #dirfiles.sort(key=lambda f: int(re.sub('\D', '', f)))
     dirfiles_sorted = sorted(dirfiles)
+    # Set to positive integer for debugging.
+    ftrunc = 0 #500
 
     for filename in dirfiles_sorted:
+        if ftrunc > 0 and fcount > ftrunc:
+            break
         if filename.endswith(".bin"):            
             fcount += 1            
             fname = (os.path.join(dir, filename))
             fsize += os.path.getsize(fname)
             with open(fname, 'rb') as f:
                 data = pickle.load(f)
-                print(f"file({fcount}): {fname} {len(data)} {len(dataset)}", file=lfp)
+                if verbose > 1:
+                    print(f"file({fcount}): {fname} {len(data)} {len(dataset)}", file=lfp)
                 fstr = f"file({fcount}): {fname} {len(data)} {len(dataset)}"
                 valid_data = []
                 for x in data:
@@ -218,9 +226,9 @@ def readdir(dir, lfp, verbose=0, osr=4, wave=None):
     return dataset, fcount
 
 # call readdir for all subdirectories of rootdir
-def dirwalk(rootdir, lfp, verbose=0, osr=4, save_by_dir=None):
+def dirwalk(rootdir, lfp, cargs):
 
-    wave = ADSBwave(osr=osr, verbose=verbose, lfp=lfp)
+    wave = ADSBwave(osr=cargs.osr, verbose=cargs.verbose, lfp=lfp)
     fcount = 0
     
     dataset = []
@@ -228,14 +236,14 @@ def dirwalk(rootdir, lfp, verbose=0, osr=4, save_by_dir=None):
         print(f"Checking: {dirname} in {rootdir}", file=lfp)
         if os.path.isdir(f"{rootdir}/{dirname}"):
             print(f"reading from: {dirname} in {rootdir}", file=lfp)
-            r_dataset, r_fcount = readdir(f"{rootdir}/{dirname}", lfp, verbose=verbose, osr=osr, wave=wave)
+            r_dataset, r_fcount = readdir(f"{rootdir}/{dirname}", lfp, verbose=cargs.verbose, osr=cargs.osr, wave=wave)
             
-            if save_by_dir is None:
+            if not cargs.save_by_dir:
                 print(f"Appending dataset: {rootdir}", file=lfp, flush=True)
                 dataset += r_dataset
             elif len(r_dataset) > 0:
-                fname = f"{save_by_dir}_{dirname}.bin"
-                writedata(fname, lfp, r_dataset)  
+                fname = f"{cargs.oname}_{dirname}.{cargs.otype}"
+                writedata(cargs, fname, lfp, r_dataset)  
                 
                 # Force GC
                 r_dataset = None
@@ -244,71 +252,234 @@ def dirwalk(rootdir, lfp, verbose=0, osr=4, save_by_dir=None):
             fcount += r_fcount
 
     print(f"reading from: {rootdir}", file=lfp)
-    r_dataset, r_fcount = readdir(rootdir, lfp, verbose=verbose, osr=osr, wave=wave)
+    r_dataset, r_fcount = readdir(rootdir, lfp, verbose=cargs.verbose, osr=cargs.osr, wave=wave)
     fcount += r_fcount
     print(f"Total of {fcount} records read.", file=lfp, flush=True)
 
-    if save_by_dir is None:
+    if cargs.save_by_dir is None:
         print(f"Appending dataset: {rootdir}", file=lfp, flush=True)
         dataset += r_dataset
 
         return dataset
         
     elif len(r_dataset) > 0:
-        fname = f"{save_by_dir}_{rootdir}.bin"
-        writedata(fname, lfp, r_dataset)  
+        fname = f"{cargs.oname}_{rootdir}.{cargs.otype}"
+        writedata(cargs, fname, lfp, r_dataset)  
         
         return
-                
+
+def get_class_stats(arr):
+    class_stats = {}
+    class_stats['values'], class_stats['counts'] = np.unique(arr, return_counts=True)
+    
+    return class_stats
+
+def preproc_sei_raw(lfp, cargs, dataset):
+    ''' Preprocess Raw SEI data which is in the form of a list of  tuples (dtime, d_in, d_out)
+    where:
+        dtime is the timestamp
+        d_in is a numpy array of complex
+        dount is a hexidecimal stream
+    '''
+
+    samples_num = len(dataset)
+
+
+    # SEI Input is real pairs as the real part and the magnitde of the complex part.
+    # Only first preamble samples are used
+
+    sample_rate = cargs.raw_sample_rate * cargs.over_sample
+    preamble_sample_num = int(cargs.preamble_time * sample_rate)
+    print(f"Preprocessing Raw Input data with preamble_sample_num: {preamble_sample_num}", file=lfp, flush=True)
+    print(f"Raw Input data len: {samples_num}, and raw input type is: {type(dataset[0])} of length {len(dataset[0])}", file=lfp, flush=True)
+    
+    # Acquire samples and labels (also provide raw I/Q samples)
+    psn = preamble_sample_num
+    in_size = int(psn*2)
+    sei_inputs_iq = np.ndarray((samples_num, psn)).astype(np.complex128)        
+    sei_inputs = np.ndarray((samples_num, in_size)).astype(np.float64)        
+    sei_timestamps = np.ndarray((samples_num, in_size)).astype(np.float64)        
+    sei_labels = np.zeros((samples_num)).astype(np.int32)
+    
+    # Accummuate Unique Ids
+    icao_to_label_map = []
+    icao_to_label_num = 0
+    samples_with_icao = 0
+    np_julian_zero = np.datetime64('1970-01-01T00:00:00')
+    np_1sec = np.timedelta64(1, 's')
+    df_stats = {}
+    
+    for dtuple in tqdm(dataset, desc="Extract from RAW SEI"):
+        dtime, d_in, d_out = dtuple
+        
+        # Get unique ID part of ADBS code
+        icao_addr, df_val = adsb_dec.get_icao(d_out)
+        if df_val in df_stats:
+            df_stats[df_val] += 1
+        else:
+            df_stats[df_val] = 1
+            
+        if icao_addr is None:
+            continue
+            
+        try:
+            sei_label = icao_to_label_map.index(icao_addr)
+            
+        except ValueError:
+            icao_to_label_map.append(icao_addr)
+            icao_to_label_num += 1
+            sei_label = icao_to_label_map.index(icao_addr)
+             
+        sei_labels[samples_with_icao] = sei_label
+        np_d_in = np.array(d_in)
+        # Convert to Real and Imaginary parts else use Magnitude and phase
+        if cargs.real_im:
+            sei_inputs[samples_with_icao] = np.concatenate((np.real(np_d_in[0:psn]),np.imag(np_d_in[0:psn])))
+        else:  
+            sei_inputs[samples_with_icao] = np.concatenate((np.abs(np_d_in[0:psn]),np.angle(np_d_in[0:psn])))
+
+        sei_inputs_iq[samples_with_icao] = np_d_in[0:psn]
+        sei_timestamps[samples_with_icao] = (np.datetime64(dtime) - np_julian_zero) / np_1sec
+        samples_with_icao += 1
+
+    print(f"DF stats.", file=lfp, flush=True)
+    for k in df_stats.keys():
+        print(f"   {k}: {df_stats[k]}", file=lfp, flush=True)
+    
+    # truncate dataset to those with valid callsign_to_label_map
+    print(f"Got {samples_with_icao} samples with a valid icao with {icao_to_label_num} distinct icaos.", file=lfp, flush=True)
+    sei_inputs = sei_inputs[:samples_with_icao,:]
+    sei_inputs_iq = sei_inputs_iq[:samples_with_icao,:]
+    sei_timestamps = sei_timestamps[:samples_with_icao,:]
+    sei_labels = sei_labels[:samples_with_icao]
+    samples_num = samples_with_icao
+
+    sei_label_num = icao_to_label_num
+
+    # Now filter out classes with insufficient samples if requested
+    if cargs.class_sample_thresh > 0:
+        class_stats = get_class_stats(sei_labels)
+        csv, csc = class_stats['values'], class_stats['counts']
+        inc_labels = []
+        for c_id in range(csc.shape[0]):
+            if csc[c_id] >= cargs.class_sample_thresh:
+                inc_labels.append(np.where(sei_labels == csv[c_id])[0])
+
+        inc_labels_count = len(inc_labels)
+        print(f"found {inc_labels_count} classes with sample count >= {cargs.class_sample_thresh} out of {csc.shape[0]} original classes.", file=lfp, flush=True)
+        if inc_labels_count > 0:
+            print(f"maximum sample count = {csc.max()}.", file=lfp, flush=True)
+        
+        if inc_labels_count > 1:
+            inc_labels_idxs = np.concatenate(inc_labels)
+        elif inc_labels_count == 1:
+            inc_labels_idxs = inc_labels
+        else:
+            print(f"WARNING: No classes found with sample count >= {cargs.class_sample_thresh}", file=lfp, flush=True)
+            #exit(2)
+            return None, None, None, None, None, 0
+        
+        sei_labels = sei_labels[inc_labels_idxs]
+        sei_inputs = sei_inputs[inc_labels_idxs]
+        sei_inputs_iq = sei_inputs_iq[inc_labels_idxs]
+        sei_timestamps = sei_timestamps[inc_labels_idxs]
+        samples_num = sei_labels.shape[0]
+
+        # Regenerate labels
+        new_unique_labels = np.unique(sei_labels)
+        sei_label_num = new_unique_labels.shape[0]
+        new_icao_to_label_map = []
+        for new_lbl, old_lbl in enumerate(new_unique_labels):
+            sei_labels[sei_labels==old_lbl] = new_lbl
+            new_icao_to_label_map.append(icao_to_label_map[old_lbl])
+
+        icao_to_label_map = new_icao_to_label_map
+        
+        # Regenerate Class stats
+        class_stats = get_class_stats(sei_labels)
+        assert class_stats['counts'].sum() == samples_num
+        
+    return sei_timestamps, sei_inputs, sei_inputs_iq, sei_labels, icao_to_label_map, samples_num
+    
 # write dataset to a file 
-def writedata(fname, lfp, dataset, trunc=None):
+def writedata(cargs, fname, lfp, dataset):
 
-    if trunc is None:
-        print(f"Saving data to: {fname}.", file=lfp, flush=True)
-        print(f"Saving data to: {fname}.", flush=True)
-        with open(fname, "wb") as fd:
-            pickle.dump(dataset, fd)
+    if cargs.trunc is None:
+        tstr = ""
+        s_dset = dataset
     else:
-        print(f"Saving truncated data to: {fname}.", file=lfp, flush=True)
-        print(f"Saving truncated data to: {fname}.", flush=True)
-        with open(fname, "wb") as fd:
-            pickle.dump(dataset[:trunc], fd)
+        tstr = " truncated"
+        s_dset = dataset[:cargs.trunc]
 
-    fsize = os.path.getsize(fname)
-    print(f"Wrote training file of size {eng_string(fsize, format='%.3f', si=True)} to {fname}.", file=lfp, flush=True)
-    print(f"Wrote training file of size {eng_string(fsize, format='%.3f', si=True)} to {fname}.", flush=True)
+    if cargs.preproc:
+        sei_timestamps, sei_inputs, sei_inputs_iq, sei_labels, icao_to_label_map, samples_num = preproc_sei_raw(lfp, cargs, s_dset)
+
+        if samples_num > 0:
+            print(f"Saving preprocessed data of {samples_num} samples to: {fname}.", file=lfp, flush=True)
+            print(f"Saving preprocessed data of {samples_num} samples to: {fname}.", flush=True)
+                
+            if ".h5" in fname:
+                with h5py.File(fname, 'w') as data_file:
+                    data_file.create_dataset('sei_timestamps', data=sei_timestamps)
+                    data_file.create_dataset('sei_inputs', data=sei_inputs)
+                    data_file.create_dataset('sei_inputs_iq', data=sei_inputs_iq)
+                    data_file.create_dataset('sei_labels', data=sei_labels)
+                    data_file.create_dataset('icao_to_label_map', data=icao_to_label_map)
+        else:
+            print(f"No valid samples found for saving!", file=lfp, flush=True)
+            print(f"No valid samples found for saving!", flush=True)
+            
+    else:
+
+        print(f"Saving{tstr} data to: {fname}.", file=lfp, flush=True)
+        print(f"Saving{tstr} data to: {fname}.", flush=True)
+            
+        if ".h5" in fname:
+            with h5py.File(fname, 'w') as data_file:
+                data_file.create_dataset('timestamp', data=s_dset[0])
+                data_file.create_dataset('d_in', data=s_dset[1])
+                data_file.create_dataset('d_out', data=s_dset[2])
+        
+        elif '.bin' in fname:
+            with open(fname, "wb") as fd:
+                pickle.dump(s_dset, fd)
+
+        fsize = os.path.getsize(fname)
+        print(f"Wrote training file of size {eng_string(fsize, format='%.3f', si=True)} to {fname}.", file=lfp, flush=True)
+        print(f"Wrote training file of size {eng_string(fsize, format='%.3f', si=True)} to {fname}.", flush=True)
     
 if __name__ == "__main__":
     import argparse
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('-v', '--verbose', action='count', default=0,
-                        help='Verbose mode')
+    parser.add_argument('-v', '--verbose', action='count', default=0, help='Verbose mode')
     parser.add_argument('-d', '--dirname', type=str, default='.', help='Root directory wherre to find the raw adsb data files in .bin format')
-    parser.add_argument('--osr', action='store', type=int, default=4,
-                        help='Over-Sampling Rate')
-    parser.add_argument('--trunc', action='store', type=int, default=None,
-                    help='Truncate the output to create a shiorter file for debugging')
+    parser.add_argument('--osr', action='store', type=int, default=4, help='Over-Sampling Rate')
+    parser.add_argument('--trunc', action='store', type=int, default=None, help='Truncate the output to create a shiorter file for debugging')
 
-    parser.add_argument('-D', '--save_by_dir', action='store_true', default=False,
-                        help='Save data by directory name in which they are found')
+    parser.add_argument('-D', '--save_by_dir', action='store_true', default=False, help='Save data by directory name in which they are found')
 
-    parser.add_argument('-w', '--write', action='store_true', default=False,
-                        help='Write out validate data to ONAME')
-    parser.add_argument('--oname', action='store', type=str, default='tdata.bin',
-                        help='Output file name')
-    parser.add_argument('--logfile', action='store', type=str, default='gentset.log',
-                        help='Output file name')
+    parser.add_argument('-w', '--write', action='store_true', default=False, help='Write out validate data to ONAME')
+    parser.add_argument('--oname', action='store', type=str, default='tdata.bin', help='Output file name')
+    parser.add_argument('--otype', action='store', type=str, default='bin', help='Output file type (used in SAVE_BY_DIR mode)')
+    parser.add_argument('--logfile', action='store', type=str, default='gentset.log', help='Output file name')
+    parser.add_argument('-p', '--preproc', action='store_true', default=False, help='preprocess raw data')
+    parser.add_argument('--raw_sample_rate', type=float, action='store', default=2e6, help='Raw data sample rate')
+    parser.add_argument('--over_sample', type=int, action='store', default=4, help='Over sample rate')
+    parser.add_argument('--preamble_time', type=float, action='store', default=8e-6, help='Preamble time (duration)')
+    parser.add_argument('--class_sample_thresh', type=int, action='store', default=0, help='Minimum number of sample instances to be included in preprocessed dataset.')
+    parser.add_argument('--real_im', action='store_true', default=False, help='Convert data to real and imaginary instead of magnitude and phase.')
+
     cargs = parser.parse_args()
 
     with open(cargs.logfile, 'w') as lfp:
         if cargs.save_by_dir:
             sbd = cargs.oname
-            dirwalk(cargs.dirname, lfp, verbose=cargs.verbose, osr=cargs.osr, save_by_dir=sbd)        
+            dirwalk(cargs.dirname, lfp, cargs)        
         else:
-            dataset = dirwalk(cargs.dirname, lfp, verbose=cargs.verbose, osr=cargs.osr)
+            dataset = dirwalk(cargs.dirname, lfp, cargs)
             if cargs.write:
-                writedata(cargs.oname, lfp, dataset, cargs.trunc)
+                writedata(cargs, cargs.oname, lfp, dataset)
 
         print(f"Completed OK!", file=lfp, flush=True)
         
