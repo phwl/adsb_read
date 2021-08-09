@@ -13,20 +13,20 @@ import pyModeS as pms
 from ADSBwave import *
 import pdb
 
-def mkdircp(src, dstdir, dirname, ex=False):
+def mkdircp(src, dstdir, dirname, dryrun=True):
     dstdir = dstdir + '/' + dirname
     if not os.path.isdir(dstdir):
         print('os.mkdir({})'.format(dstdir))
-        if ex:
+        if not dryrun:
             os.mkdir(dstdir)
     print('cp {} {}\n'.format(src, dstdir))
     print('shutil.copy2(src, dstdir)'.format(src, dstdir)) 
-    if ex:
+    if not dryrun:
         shutil.copy2(src, dstdir)
 
 # read and decode all .bin files in the directory, 
-def readdir(srcdir, dstdir, verbose=0, osr=4):
-    wave = ADSBwave(osr=osr, verbose=verbose)
+def readdir(srcdir, dstdir, cargs):
+    wave = ADSBwave(osr=cargs.osr, verbose=cargs.verbose)
     fsize = 0
     fcount = 0
     verified = 0
@@ -42,32 +42,31 @@ def readdir(srcdir, dstdir, verbose=0, osr=4):
             fname = (os.path.join(srcdir, filename))
             mtime = os.path.getmtime(fname)
             xctime = time.strftime("%Y-%m-%d", time.localtime(mtime))
-            mkdircp(fname, dstdir, '{}'.format(xctime))
+            mkdircp(fname, dstdir, '{}'.format(xctime), dryrun=cargs.dryrun)
 
 # call readdir for all subdirectories of rootdir
-def dirwalk(rootdir, dstdir, verbose=0, osr=4):
+def dirwalk(rootdir, dstdir, cargs):
 
     dataset = []
     for dirname in os.listdir(rootdir):
         print('* {}'.format(dirname))
         if os.path.isdir(f"{rootdir}/{dirname}"):
             print(f"reading from: {dirname} in {rootdir}")
-            readdir(f"{rootdir}/{dirname}", dstdir, verbose=verbose, osr=osr)
+            readdir(f"{rootdir}/{dirname}", dstdir, cargs)
     return dataset
                 
 if __name__ == "__main__":
     import argparse
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('-v', '--verbose', action='count', default=0,
-                        help='Verbose mode')
+    parser.add_argument('-v', '--verbose', action='count', default=0, help='Verbose mode')
     parser.add_argument('-s', '--srcdir', type=str, default='.', help='Root directory where to find the raw adsb data files in .bin format')
     parser.add_argument('-d', '--dstdir', type=str, default='/tmp', help='Root directory where to place the raw adsb data files in .bin format')
-    parser.add_argument('--osr', action='store', type=int, default=4,
-                        help='Over-Sampling Rate')
+    parser.add_argument('--dryrun', action='store_true', default=False, help='Do a dry-run (just create directories.')
+    parser.add_argument('--osr', action='store', type=int, default=4, help='Over-Sampling Rate')
     cargs = parser.parse_args()
 
-    dataset = dirwalk(cargs.srcdir, cargs.dstdir, verbose=cargs.verbose, osr=cargs.osr)
+    dataset = dirwalk(cargs.srcdir, cargs.dstdir, cargs)
     
     exit(0)
     

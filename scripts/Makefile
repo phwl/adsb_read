@@ -3,7 +3,8 @@ rootdir=$(HOME)/Projects/CruxSEI
 
 p3=python3
 otype=h5
-data_src_dir=~phwl/data/adsb-data
+raw_data_src_dir=~phwl/data/adsb-data
+data_src_dir=$(rootdir)/raw_data
 data_dst_dir=$(rootdir)/data/
 data_dst_file=tdata_20210726.$(otype)
 data_dst_file_trunc=tdata_trunc.$(otype)
@@ -19,4 +20,7 @@ run_save_by_dir:
 	$(p3) ./gentset.py -d $(data_src_dir) --write --oname $(data_dst_dir)tdata_$(date_str) --save_by_dir --otype $(otype)
 
 run_save_by_dir_preproc:
-	$(p3) ./gentset.py -d $(data_src_dir) --write --oname $(data_dst_dir)tdata_$(date_str) --save_by_dir --preproc --class_sample_thresh 40 --otype $(otype)
+	$(p3) ./gentset.py -d $(raw_data_src_dir) --write --oname $(data_dst_dir)tdata_$(date_str) --save_by_dir --preproc --class_sample_thresh 40 --otype $(otype)
+
+run_preproc_agg:
+	$(p3) ./gentset.py -d $(data_src_dir) --write --oname $(data_dst_dir)tdata_agg_$(date_str).$(otype) --preproc --agg --class_sample_thresh 40
