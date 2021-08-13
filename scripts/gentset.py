@@ -173,7 +173,7 @@ def readdir(dir, lfp, verbose=0, osr=4, wave=None):
     #dirfiles.sort(key=lambda f: int(re.sub('\D', '', f)))
     dirfiles_sorted = sorted(dirfiles)
     # Set to positive integer for debugging.
-    ftrunc = 500
+    ftrunc = 0
 
     for filename in dirfiles_sorted:
         if ftrunc > 0 and fcount > ftrunc:
