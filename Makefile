@@ -1,5 +1,5 @@
 #PLDATALOC=	/srv/breamdisk/adsb-data
-PLDATALOC= :~/CruxML/Projects/data
+PLDATALOC= ~/CruxML/Projects/data
 J03DATALOC=	.
 #datadir= pluto-PLsplace/x1
 datadir= pluto-BFsplace/x1
