@@ -12,6 +12,7 @@ import scipy.signal as sig
 import matplotlib.pyplot as plt
 import pickle
 import os
+from pathlib import Path
 
 modes_frequency = 1090e6
 
@@ -225,6 +226,10 @@ class SDRFileReader(object):
                     break
                 self.fileno += 1
             print("Writing training file to", fname)
+            
+            # Ensure the parent directory path exists 
+            parent = Path(fname).resolve().parent
+            parent.mkdir(parents=True, exist_ok=True)
             with open(fname, "wb") as fd:
                 pickle.dump(self.tdata, fd)
         self.tdata = []
