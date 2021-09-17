@@ -332,7 +332,7 @@ def filter_classes(cargs, lfp, sei_labels, sei_inputs, sei_inputs_iq, sei_timest
     if inc_labels_count < 1:
         print(f"WARNING: No classes found with sample count >= {cargs.class_sample_thresh}", file=lfp, flush=True)
         #exit(2)
-        return None, None, None, None
+        return None, None, None, None, None, None
     
     r_sei_labels = sei_labels[inc_labels_idxs]
     r_sei_inputs = sei_inputs[inc_labels_idxs]
