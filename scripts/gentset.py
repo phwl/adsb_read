@@ -9,9 +9,17 @@ import re
 import math
 import pyModeS as pms
 from ADSBwave import *
-sys.path.append('../../CruxML_DNN')
+
+cruxml_dnn_path = '../../CruxML_DNN'
+if os.path.isdir(cruxml_dnn_path):
+    sys.path.append(cruxml_dnn_path)
+else:
+    print(f"ERROR: {cruxml_dnn_path} path not found, please instal CruxML_DNN from git repo!")
+    exit(3)
+    
 import utils.adsb_decoder as adsb_dec
 from tqdm import tqdm
+from pathlib import Path
 import pdb
 
 def mytell(msg, lfp):
@@ -241,53 +249,60 @@ def dirwalk(rootdir, lfp, cargs):
         if os.path.isdir(f"{rootdir}/{dirname}"):
             print(f"reading from: {dirname} in {rootdir}", file=lfp)
             r_dataset, r_fcount = readdir(f"{rootdir}/{dirname}", lfp, verbose=cargs.verbose, osr=cargs.osr, wave=wave)
-            
-            if cargs.preproc and cargs.agg:
-                sei_timestamps, sei_inputs, sei_inputs_iq, sei_labels = preproc_sei_raw(lfp, cargs, r_dataset, icao_to_label_map, class_filt=False)
-                print(f"icao_to_label_map len: {len(icao_to_label_map)}", file=lfp, flush=True)
-                if sei_timestamps is not None and sei_timestamps.shape[0] > 0:
-                    dataset.append([sei_timestamps, sei_inputs, sei_inputs_iq, sei_labels])
+                       
+            if not cargs.save_by_dir or cargs.agg:
+                if not cargs.preproc:
+                    print(f"Appending dataset: {rootdir}", file=lfp, flush=True)
+                    dataset += r_dataset
                     
-            elif not cargs.save_by_dir:
-                print(f"Appending dataset: {rootdir}", file=lfp, flush=True)
-                dataset += r_dataset
+                else:
+                    sei_timestamps, sei_inputs, sei_inputs_iq, sei_labels = preproc_sei_raw(lfp, cargs, r_dataset, icao_to_label_map)
+                    if sei_timestamps is not None and sei_timestamps.shape[0] > 0:
+                        print(f"Samples: {len(sei_timestamps)}", file=lfp, flush=True)
+                        print(f"icao_to_label_map len: {len(icao_to_label_map)}", file=lfp, flush=True)
+                        dataset.append([sei_timestamps, sei_inputs, sei_inputs_iq, sei_labels])
+                    else:
+                        print(f"Samples: 0", file=lfp, flush=True)
+                        
             elif len(r_dataset) > 0:
                 fname = f"{cargs.oname}_{dirname}.{cargs.otype}"
-                writedata_from_unpreproc(cargs, fname, lfp, r_dataset)  
+                writedata(cargs, fname, lfp, r_dataset)  
                 
                 # Force GC
                 r_dataset = None
                 gc.collect()
                 
             fcount += r_fcount
+            print(f"Subtotal of {r_fcount} records read.", file=lfp, flush=True)
 
     print(f"reading from: {rootdir}", file=lfp)
     r_dataset, r_fcount = readdir(rootdir, lfp, verbose=cargs.verbose, osr=cargs.osr, wave=wave)
     fcount += r_fcount
     print(f"Total of {fcount} records read.", file=lfp, flush=True)
 
-    if cargs.preproc and cargs.agg:
-        sei_timestamps, sei_inputs, sei_inputs_iq, sei_labels = preproc_sei_raw(lfp, cargs, r_dataset, icao_to_label_map, class_filt=False)
-        print(f"icao_to_label_map len: {len(icao_to_label_map)}", file=lfp, flush=True)
-        
-        if sei_timestamps is not None and sei_timestamps.shape[0] > 0:
-            dataset.append([sei_timestamps, sei_inputs, sei_inputs_iq, sei_labels])
+    if not cargs.save_by_dir or cargs.agg:
+        if not cargs.preproc:
+            print(f"Appending dataset: {rootdir}", file=lfp, flush=True)
+            dataset += r_dataset
             
-        writedata(cargs, cargs.oname, lfp, dataset, icao_to_label_map)  
+            return dataset, None, False
+            
+        else:
+            sei_timestamps, sei_inputs, sei_inputs_iq, sei_labels = preproc_sei_raw(lfp, cargs, r_dataset, icao_to_label_map)
+            if sei_timestamps is not None and sei_timestamps.shape[0] > 0:
+                print(f"Sample len: {len(sei_timestamps)}", file=lfp, flush=True)
+                print(f"icao_to_label_map len: {len(icao_to_label_map)}", file=lfp, flush=True)
+                dataset.append([sei_timestamps, sei_inputs, sei_inputs_iq, sei_labels])
+            else:
+                print(f"Samples: 0", file=lfp, flush=True)
         
-        return None
-        
-    elif cargs.save_by_dir is None:
-        print(f"Appending dataset: {rootdir}", file=lfp, flush=True)
-        dataset += r_dataset
-
-        return dataset
-        
+            return dataset, icao_to_label_map, True
+                            
     elif len(r_dataset) > 0:
         fname = f"{cargs.oname}_{rootdir}.{cargs.otype}"
-        writedata_from_unpreproc(cargs, fname, lfp, r_dataset)  
+        writedata(cargs, fname, lfp, r_dataset)  
         
-        return
+    return None, None
 
 def get_class_stats(arr):
     class_stats = {}
@@ -299,21 +314,22 @@ def filter_classes(cargs, lfp, sei_labels, sei_inputs, sei_inputs_iq, sei_timest
 
     class_stats = get_class_stats(sei_labels)
     csv, csc = class_stats['values'], class_stats['counts']
-    inc_labels = []
+    inc_labels_idxs = []
     for c_id in range(csc.shape[0]):
         if csc[c_id] >= cargs.class_sample_thresh:
-            inc_labels.append(np.where(sei_labels == csv[c_id])[0])
+            inc_labels_idxs.extend(np.where(sei_labels == csv[c_id])[0].tolist())
 
-    inc_labels_count = len(inc_labels)
+    inc_labels_count = len(inc_labels_idxs)
     print(f"found {inc_labels_count} classes with sample count >= {cargs.class_sample_thresh} out of {csc.shape[0]} original classes.", file=lfp, flush=True)
     if inc_labels_count > 0:
         print(f"maximum sample count = {csc.max()}.", file=lfp, flush=True)
     
-    if inc_labels_count > 1:
-        inc_labels_idxs = np.concatenate(inc_labels)
-    elif inc_labels_count == 1:
-        inc_labels_idxs = inc_labels
-    else:
+    #if inc_labels_count > 1:
+    #    inc_labels_idxs = np.concatenate(inc_labels)
+    #elif inc_labels_count == 1:
+    #    inc_labels_idxs = inc_labels
+    #else:
+    if inc_labels_count < 1:
         print(f"WARNING: No classes found with sample count >= {cargs.class_sample_thresh}", file=lfp, flush=True)
         #exit(2)
         return None, None, None, None
@@ -338,7 +354,7 @@ def filter_classes(cargs, lfp, sei_labels, sei_inputs, sei_inputs_iq, sei_timest
 
     return r_sei_labels , r_sei_inputs, r_sei_inputs_iq, r_sei_timestamps, new_icao_to_label_map, samples_num
         
-def preproc_sei_raw(lfp, cargs, dataset, icao_to_label_map, class_filt=True):
+def preproc_sei_raw(lfp, cargs, dataset, icao_to_label_map):
     ''' Preprocess Raw SEI data which is in the form of a list of  tuples (dtime, d_in, d_out)
     where:
         dtime is the timestamp
@@ -421,7 +437,7 @@ def preproc_sei_raw(lfp, cargs, dataset, icao_to_label_map, class_filt=True):
         print(f"   {k}: {df_stats[k]}", file=lfp, flush=True)
     
     # truncate dataset to those with valid callsign_to_label_map
-    print(f"Got {samples_with_icao} samples with a valid icao with {icao_to_label_num} distinct icaos.", file=lfp, flush=True)
+    print(f"Got {samples_with_icao} samples with valid icao and {icao_to_label_num} distinct icaos.", file=lfp, flush=True)
     sei_inputs = sei_inputs[:samples_with_icao,:]
     sei_inputs_iq = sei_inputs_iq[:samples_with_icao,:]
     sei_timestamps = sei_timestamps[:samples_with_icao]
@@ -431,13 +447,13 @@ def preproc_sei_raw(lfp, cargs, dataset, icao_to_label_map, class_filt=True):
     sei_label_num = icao_to_label_num
 
     # Now filter out classes with insufficient samples if requested
-    if class_filt and cargs.class_sample_thresh > 0:
+    if cargs.class_sample_thresh > 0:
         sei_labels, sei_inputs, sei_inputs_iq, sei_timestamps, icao_to_label_map, samples_num = filter_classes(cargs, lfp, sei_labels, sei_inputs, sei_inputs_iq, sei_timestamps, icao_to_label_map)
                 
     return sei_timestamps, sei_inputs, sei_inputs_iq, sei_labels
     
 # write dataset to a file starting from unpreprocessed data 
-def writedata_from_unpreproc(cargs, fname, lfp, dataset):
+def writedata(cargs, fname, lfp, dataset, icao_to_label_map_in=None, preproced=False):
 
     if cargs.trunc is None:
         tstr = ""
@@ -447,8 +463,38 @@ def writedata_from_unpreproc(cargs, fname, lfp, dataset):
         s_dset = dataset[:cargs.trunc]
 
     if cargs.preproc:
-        sei_timestamps, sei_inputs, sei_inputs_iq, sei_labels, icao_to_label_map, samples_num = preproc_sei_raw(lfp, cargs, s_dset)
 
+        if preproced:
+            icao_to_label_map = icao_to_label_map_in
+            
+            if len(s_dset) == 1:
+                sei_timestamps, sei_inputs, sei_inputs_iq, sei_labels = s_dset
+            else:
+                ts_lst = []
+                in_lst = []
+                in_iq_lst = []
+                lbls_lst = []
+                for s_d in s_dset:
+                    ts_lst.append(s_d[0])
+                    in_lst.append(s_d[1])
+                    in_iq_lst.append(s_d[2])
+                    lbls_lst.append(s_d[3])
+
+                sei_timestamps = np.concatenate(ts_lst)
+                sei_inputs = np.concatenate(in_lst)
+                sei_inputs_iq = np.concatenate(in_iq_lst)
+                sei_labels = np.concatenate(lbls_lst)
+        else:
+            icao_to_label_map = []
+            sei_timestamps, sei_inputs, sei_inputs_iq, sei_labels = preproc_sei_raw(lfp, cargs, s_dset, icao_to_label_map)
+
+        samples_num = sei_timestamps.shape[0] 
+
+        print(f"ICAO Stats", file=lfp, flush=True)
+        icao_labels, cnts = np.unique(sei_labels, return_counts=True)
+        for icao_label, cnt in zip(icao_labels, cnts):
+            print(f"{icao_label}: {icao_to_label_map[icao_label]}, samples: {cnt}.", file=lfp, flush=True)
+            
         if samples_num > 0:
             print(f"Saving preprocessed data of {samples_num} samples to: {fname}.", file=lfp, flush=True)
             print(f"Saving preprocessed data of {samples_num} samples to: {fname}.", flush=True)
@@ -468,7 +514,11 @@ def writedata_from_unpreproc(cargs, fname, lfp, dataset):
 
         print(f"Saving{tstr} data to: {fname}.", file=lfp, flush=True)
         print(f"Saving{tstr} data to: {fname}.", flush=True)
-            
+
+        # Ensure the parent directory exists
+        parent = Path(fname).resolve().parent
+        parent.mkdir(parents=True, exist_ok=True)
+        
         if ".h5" in fname:
             with h5py.File(fname, 'w') as data_file:
                 data_file.create_dataset('timestamp', data=s_dset[0])
@@ -484,9 +534,7 @@ def writedata_from_unpreproc(cargs, fname, lfp, dataset):
     print(f"Wrote training file of size {eng_string(fsize, format='%.3f', si=True)} to {fname}.", flush=True)
 
 # write dataset to a file starting from preprocessed data 
-def writedata(cargs, fname, lfp, dataset, icao_to_label_map):
-
-    #sei_timestamps, sei_inputs, sei_inputs_iq, sei_labels, icao_to_label_map, samples_num = preproc_sei_raw(lfp, cargs, s_dset)
+def writedata_old(cargs, fname, lfp, dataset, icao_to_label_map):
 
     sei_timestamps = []
     sei_inputs = []
@@ -564,9 +612,9 @@ if __name__ == "__main__":
             sbd = cargs.oname
             dirwalk(cargs.dirname, lfp, cargs)        
         else:
-            dataset = dirwalk(cargs.dirname, lfp, cargs)
+            dataset, icao_lm, preproced = dirwalk(cargs.dirname, lfp, cargs)
             if dataset is not None and cargs.write:
-                writedata_from_unpreproc(cargs, cargs.oname, lfp, dataset)
+                writedata(cargs, cargs.oname, lfp, dataset, icao_lm, preproced=preproced)
 
         print(f"Completed OK!", file=lfp, flush=True)
         
