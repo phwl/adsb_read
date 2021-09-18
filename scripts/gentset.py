@@ -467,8 +467,9 @@ def writedata(cargs, fname, lfp, dataset, icao_to_label_map_in=None, preproced=F
         if preproced:
             icao_to_label_map = icao_to_label_map_in
             
-            if len(s_dset) == 1:
-                sei_timestamps, sei_inputs, sei_inputs_iq, sei_labels = s_dset
+            if len(s_dset) == 0:
+                print(f"No data to save!", file=lfp, flush=True)
+                return
             else:
                 ts_lst = []
                 in_lst = []
