@@ -225,7 +225,7 @@ class SDRFileReader(object):
                 if not os.path.isfile(fname):
                     break
                 self.fileno += 1
-            print("Writing training file to", fname)
+            print("Writing training file to", fname, flush=True)
             
             # Ensure the parent directory path exists 
             parent = Path(fname).resolve().parent
@@ -303,13 +303,13 @@ class SDRFileReader(object):
         if self._check_msg(msg):
             msglen = len(msg)
             if df == 17 and msglen == 28:
-                print(self.frames, ":", msg, pms.icao(msg), pms.crc(msg))
+                print(self.frames, ":", msg, pms.icao(msg), pms.crc(msg), flush=True)
             elif df in [20, 21] and msglen == 28:
-                print(self.frames, ":", msg, pms.icao(msg))
+                print(self.frames, ":", msg, pms.icao(msg), flush=True)
             elif df in [4, 5, 11] and msglen == 14:
-                print(self.frames, ":", msg, pms.icao(msg))
+                print(self.frames, ":", msg, pms.icao(msg), flush=True)
         elif self.debug:
-            print("X", ":", msg)
+            print("X", ":", msg, flush=True)
 
 
     def _read_callback(self, cdata, rtlsdr_obj):
