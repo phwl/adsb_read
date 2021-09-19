@@ -16,6 +16,8 @@ t1:
 	@printf "now_datadir: $(now_datadir)\n"
 	@printf "run_log: $(run_log)\n"
 
+status:
+	@pgrep -a python3
 
 test:
 	$(p) adsb_read.py -v -i data/rxa6982-long.raw
