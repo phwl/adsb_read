@@ -1,10 +1,9 @@
-
-rootdir=$(HOME)/CruxML/Projects
+rootdir=$(HOME)/Projects/CruxSEI
 
 p3=python3
 otype=h5
-raw_data_src_dir=~phwl/data/adsb-data
-all_data_src_dir=$(rootdir)/raw_data/pluto-BFsplace
+all_data_src_dir=~phwl/data/adsb-data/pluto-PLsplace
+#all_data_src_dir=$(rootdir)/raw_data/pluto-BFsplace
 date_str=20210917
 data_src_dir=$(all_data_src_dir)/$(date_str)
 data_dst_dir=$(rootdir)/data/
