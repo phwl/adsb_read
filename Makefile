@@ -1,8 +1,9 @@
-#PLDATALOC=	/srv/breamdisk/adsb-data
-PLDATALOC= ~/CruxML/Projects/raw_data
+#DATALOC=	/srv/breamdisk/adsb-data
+DATALOC= ~/Projects/CruxSEI/raw_data
+#DATALOC= ~phwl/data/adsb_data
 J03DATALOC=	.
-#datadir= pluto-PLsplace/x1
-topdir= $(PLDATALOC)/pluto-BFsplace
+#topdir= $(DATALOC)/pluto1-PL1
+topdir= $(DATALOC)/pluto2-BF1
 datadir= $(topdir)/20210917/x1
 
 $(eval now_date="$(shell date +%Y%m%d)")
@@ -24,8 +25,12 @@ test:
 	$(p) adsb_read.py -u16 -r16 -i data/rxa6982-long.raw
 
 gentset:
-#	$(p) scripts/gentset.py $(PLDATALOC)
+#	$(p) scripts/gentset.py $(DATALOC)
 	@cd scripts; make now; cd ..
+
+gentset_all:
+#	$(p) scripts/gentset.py $(DATALOC)
+	@cd scripts; make now_all; cd ..
 	
 run: run_pluto
 
@@ -52,3 +57,4 @@ run_rtl_sdr:
 
 clean:
 	-rm -f *.iq *-iqindex.txt
+	
