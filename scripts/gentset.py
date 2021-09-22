@@ -526,6 +526,7 @@ def preproc_sei_raw(lfp, cargs, dataset, icao_to_label_map):
     
 # write dataset to a file starting from unpreprocessed data 
 def writedata(cargs, fname, lfp, dataset, icao_to_label_map_in=None, preproced=False):
+    SEIdata_version = '1.0'
 
     if cargs.trunc is None:
         tstr = ""
@@ -579,6 +580,7 @@ def writedata(cargs, fname, lfp, dataset, icao_to_label_map_in=None, preproced=F
                     data_file.create_dataset('sei_inputs_iq', data=sei_inputs_iq)
                     data_file.create_dataset('sei_labels', data=sei_labels)
                     data_file.create_dataset('icao_to_label_map', data=icao_to_label_map)
+                    data_file.attrs['SEIData_version'] = SEIdata_version
         else:
             print(f"No valid samples found for saving!", file=lfp, flush=True)
             print(f"No valid samples found for saving!", flush=True)
