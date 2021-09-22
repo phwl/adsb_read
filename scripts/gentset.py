@@ -234,7 +234,7 @@ def readdir(dir, lfp, verbose=0, osr=4, wave=None):
     return dataset, fcount
 
 # call readdir for all subdirectories of rootdir
-def dirwalk(rootdir, lfp, cargs):
+def dirwalk_old(rootdir, lfp, cargs):
 
     wave = ADSBwave(osr=cargs.osr, verbose=cargs.verbose, lfp=lfp)
     fcount = 0
@@ -303,6 +303,78 @@ def dirwalk(rootdir, lfp, cargs):
         writedata(cargs, fname, lfp, r_dataset)  
         
     return None, None
+
+# call readdir for all subdirectories of rootdir
+def dirwalk(rootdir, lfp, cargs):
+
+    wave = ADSBwave(osr=cargs.osr, verbose=cargs.verbose, lfp=lfp)
+    fcount = 0
+
+    if cargs.preproc:
+        icao_to_label_map = []
+
+    dataset = []
+
+    if isinstance(rootdir, list):
+        dir_list = rootdir
+    else:
+        dir_list = [rootdir]
+        
+    for dirname in rootdir:
+        fcount += dir_read_and_walk(lfp, cargs, dirname, dataset, icao_to_label_map, dirname, wave)
+
+    print(f"Total of {fcount} records read.", file=lfp, flush=True)
+
+    if not cargs.save_by_dir or cargs.agg:
+        if not cargs.preproc:           
+            return dataset, None, False
+            
+        else:        
+            return dataset, icao_to_label_map, True
+                            
+    else:     
+        return None, None, None
+   
+def dir_read_and_walk(lfp, cargs, dirname_path, dataset, icao_to_label_map, rootdir, wave):
+
+    r_fcount = 0
+    # Descend through child directories
+    for subdirname in os.listdir(dirname_path):
+        subdirname_path = f"{dirname_path}/{subdirname}"
+        print(f"Checking: {dirname_path} in {subdirname}", file=lfp)
+        if os.path.isdir(subdirname_path):
+            r_fcount += dir_read_and_walk(lfp, cargs, subdirname_path, dataset, icao_to_label_map, rootdir, wave)
+    
+    # Process files in this directory    
+    print(f"reading from: {dirname_path}", file=lfp)
+    r_dataset, l_r_fcount = readdir(dirname_path, lfp, verbose=cargs.verbose, osr=cargs.osr, wave=wave)
+                       
+    if not cargs.save_by_dir or cargs.agg:
+        if not cargs.preproc:
+            print(f"Appending dataset: {rootdir}", file=lfp, flush=True)
+            dataset += r_dataset
+            
+        else:
+            sei_timestamps, sei_inputs, sei_inputs_iq, sei_labels = preproc_sei_raw(lfp, cargs, r_dataset, icao_to_label_map)
+            if sei_timestamps is not None and sei_timestamps.shape[0] > 0:
+                print(f"Samples: {len(sei_timestamps)}", file=lfp, flush=True)
+                print(f"icao_to_label_map len: {len(icao_to_label_map)}", file=lfp, flush=True)
+                dataset.append([sei_timestamps, sei_inputs, sei_inputs_iq, sei_labels])
+            else:
+                print(f"Samples: 0", file=lfp, flush=True)
+                
+    elif len(r_dataset) > 0:
+        fname = f"{cargs.oname}_{dirname_path.replace(rootdir,'')}.{cargs.otype}"
+        writedata(cargs, fname, lfp, r_dataset)  
+        
+        # Force GC
+        r_dataset = None
+        gc.collect()
+        
+    fcount = r_fcount + l_r_fcount
+    print(f"Subtotal of {fcount} records read.", file=lfp, flush=True)
+        
+    return fcount
 
 def get_class_stats(arr):
     class_stats = {}
@@ -588,7 +660,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument('-v', '--verbose', action='count', default=0, help='Verbose mode')
-    parser.add_argument('-d', '--dirname', type=str, default='.', help='Root directory wherre to find the raw adsb data files in .bin format')
+    parser.add_argument('-d', '--dirname', nargs='+', type=str, default='.', help='Root directory wherre to find the raw adsb data files in .bin format')
     parser.add_argument('--osr', action='store', type=int, default=4, help='Over-Sampling Rate')
     parser.add_argument('--trunc', action='store', type=int, default=None, help='Truncate the output to create a shiorter file for debugging')
 
