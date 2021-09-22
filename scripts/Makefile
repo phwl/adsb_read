@@ -1,10 +1,15 @@
+#src_rootdir=$(HOME)/Projects/CruxSEI
+src_rootdir=~phwl/data/adsb-data
 rootdir=$(HOME)/Projects/CruxSEI
-#rootdir=~pwhl/data/adsb_data
+
+P1PL1=~phwl/data/adsb-data/pluto1-PL1
+P1PL2=~phwl/data/adsb-data/pluto1-PL2
+P2BF1=$(rootdir)/raw_data/pluto2-BF1
 
 p3=python3
 otype=h5
-#all_data_src_dir=$(rootdir)/pluto1-PL*
-all_data_src_dir=$(rootdir)/raw_data/pluto2-BF*
+all_data_src_dir=$(src_rootdir)/pluto1-PL*
+#all_data_src_dir=$(src_rootdir)/raw_data/pluto2-BF*
 date_str=20210917
 data_src_dir=$(all_data_src_dir)/$(date_str)
 data_dst_dir=$(rootdir)/data/
@@ -46,3 +51,12 @@ run_preproc_agg_now_all:
 	$(p3) ./gentset.py -d $(all_data_src_dir) --write --oname $(data_dst_dir)tdata_agg_all_$(now_date).$(otype) --preproc --agg --logfile gentset_agg.log
 
 test: run_preproc_agg run_save_by_dir_preproc
+
+P1PL1_gen:
+	$(p3) ./gentset.py -d $(P1PL1) --write --oname $(data_dst_dir)P1PL1.$(otype) --preproc --agg --logfile gentset_P1PL1.log
+
+P1PL2_gen:
+	$(p3) ./gentset.py -d $(P1PL2) --write --oname $(data_dst_dir)P1PL2.$(otype) --preproc --agg --logfile gentset_P1PL2.log
+
+P2BF1_gen:
+	$(p3) ./gentset.py -d $(P1BF1) --write --oname $(data_dst_dir)P2BF1.$(otype) --preproc --agg --logfile gentset_P2BF1.log
