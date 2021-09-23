@@ -1,15 +1,22 @@
 #src_rootdir=$(HOME)/Projects/CruxSEI
-src_rootdir=~phwl/data/adsb-data
+ifeq ($(strip $(CRUXML_ADSBDATA_ROOTDIR)),)
+	src_rootdir= ~/Projects/CruxSEI/adsb_data
+else
+	src_rootdir= $(CRUXML_ADSBDATA_ROOTDIR)
+endif
 rootdir=$(HOME)/Projects/CruxSEI
 
 P1PL1=~phwl/data/adsb-data/pluto1-PL1
 P1PL2=~phwl/data/adsb-data/pluto1-PL2
-P2BF1=$(rootdir)/raw_data/pluto2-BF1
+P2BF1=$(src_rootdir)/pluto2-BF1
 
 p3=python3
 otype=h5
-all_data_src_dir=$(src_rootdir)/pluto1-PL*
-#all_data_src_dir=$(src_rootdir)/raw_data/pluto2-BF*
+ifeq ($(shell hostname), mako)
+	all_data_src_dir=$(src_rootdir)/pluto2-BF*
+else
+	all_data_src_dir=$(src_rootdir)/pluto1-PL*
+endif
 date_str=20210917
 data_src_dir=$(all_data_src_dir)/$(date_str)
 data_dst_dir=$(rootdir)/data/
@@ -21,7 +28,9 @@ topN=40
 $(eval now_date=$(shell date +%Y%m%d))
 
 t1:
-	@printf "$(now_date)\n"
+	@printf "hostname: $(shell hostname)\n"
+	@printf "all_data_src_dir: $(all_data_src_dir)\n"
+	@printf "date: $(now_date)\n"
 	
 run: run_preproc_agg
 

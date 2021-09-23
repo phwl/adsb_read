@@ -1,5 +1,9 @@
 #DATALOC=	/srv/breamdisk/adsb-data
-DATALOC= ~/Projects/CruxSEI/raw_data
+ifeq ($(strip $(CRUXML_ADSBDATA_ROOTDIR)),)
+	DATALOC= ~/Projects/CruxSEI/raw_data
+else
+	DATALOC= $(CRUXML_ADSBDATA_ROOTDIR)
+endif
 #DATALOC= ~phwl/data/adsb_data
 J03DATALOC=	.
 #topdir= $(DATALOC)/pluto1-PL1
@@ -12,6 +16,7 @@ run_log= $(topdir)/adsb_read_$(now_date).log
 p= python3
 
 t1:
+	@printf "DATALOC: $(DATALOC)\n"
 	@printf "date: $(now_date)\n"
 	@printf "topdir: $(topdir)\n"
 	@printf "now_datadir: $(now_datadir)\n"
