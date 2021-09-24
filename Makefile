@@ -1,13 +1,18 @@
 #DATALOC=	/srv/breamdisk/adsb-data
-ifeq ($(strip $(CRUXML_ADSBDATA_ROOTDIR)),)
-	DATALOC= ~/Projects/CruxSEI/raw_data
+ifeq ($(strip $(CRUXSEI_PROJECT_ADSBDATA_ROOTDIR)),)
+	DATALOC= ~/Projects/CruxSEI/adsb-data
 else
-	DATALOC= $(CRUXML_ADSBDATA_ROOTDIR)
+	DATALOC= $(CRUXSEI_PROJECT_ADSBDATA_ROOTDIR)
 endif
 #DATALOC= ~phwl/data/adsb_data
 J03DATALOC=	.
-#topdir= $(DATALOC)/pluto1-PL1
-topdir= $(DATALOC)/pluto2-BF1
+
+ifeq ($(shell hostname), mako)
+	topdir= $(DATALOC)/pluto2-BF1
+else
+	topdir= $(DATALOC)/pluto1-PL1
+endif
+
 datadir= $(topdir)/20210917/x1
 
 $(eval now_date="$(shell date +%Y%m%d)")

@@ -1,10 +1,21 @@
 #src_rootdir=$(HOME)/Projects/CruxSEI
-ifeq ($(strip $(CRUXML_ADSBDATA_ROOTDIR)),)
-	src_rootdir= ~/Projects/CruxSEI/adsb_data
+ifeq ($(strip $(CRUXSEI_PROJECT_ADSBDATA_ROOTDIR)),)
+	src_rootdir= ~/Projects/CruxSEI/adsb-data
 else
-	src_rootdir= $(CRUXML_ADSBDATA_ROOTDIR)
+	src_rootdir= $(CRUXSEI_PROJECT_ADSBDATA_ROOTDIR)
 endif
-rootdir=$(HOME)/Projects/CruxSEI
+
+ifeq ($(strip $(CRUXSEI_PROJECT_ADSBDATA_ROOTDIR)),)
+	rootdir=$(HOME)/Projects/CruxSEI
+else
+	rootdir= $(CRUXSEI_PROJECT)
+endif
+
+ifeq ($(strip $(CRUXSEI_PROJECT_DATA_ROOTDIR)),)
+	data_dst_dir=$(rootdir)/data/
+else
+	data_dst_dir= $(CRUXSEI_PROJECT_DATA_ROOTDIR)
+endif
 
 P1PL1=~phwl/data/adsb-data/pluto1-PL1
 P1PL2=~phwl/data/adsb-data/pluto1-PL2
@@ -19,7 +30,6 @@ else
 endif
 date_str=20210917
 data_src_dir=$(all_data_src_dir)/$(date_str)
-data_dst_dir=$(rootdir)/data/
 data_dst_file=tdata_$(date_str).$(otype)
 data_dst_file_trunc=tdata_trunc.$(otype)
 
