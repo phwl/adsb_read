@@ -18,6 +18,8 @@ datadir= $(topdir)/20210917/x1
 $(eval now_date="$(shell date +%Y%m%d)")
 now_datadir=  $(topdir)/$(now_date)/x1
 run_log= $(topdir)/adsb_read_$(now_date).log
+$(eval user=$(shell whoami))
+
 p= python3
 
 t1:
@@ -67,4 +69,11 @@ run_rtl_sdr:
 
 clean:
 	-rm -f *.iq *-iqindex.txt
-	
+
+xfer_data_to_amberjack:
+	printf "Please remember to establish VPN to Amberjack using:\n\n> sudo openconnect -b -u <unikey> --passwd-on-stdin --protocol anyconnect vpn.sydney.edu.au\n\n<type your password here there is no prompt>\n\n"	
+	scp -r $(topdir) $(user)@amberjack.staff.sydney.edu.au:/home/cruxml/Projects/CruxSEI/adsb-data	
+
+rsync_data_to_amberjack:
+	printf "Please remember to establish VPN to Amberjack using:\n\n> sudo openconnect -b -u <unikey> --passwd-on-stdin --protocol anyconnect vpn.sydney.edu.au\n\n<type your password here there is no prompt>\n\n"	
+	rsync -av $(topdir) $(user)@amberjack.staff.sydney.edu.au:/home/cruxml/Projects/CruxSEI/adsb-data	
