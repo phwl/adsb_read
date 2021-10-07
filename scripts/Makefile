@@ -36,6 +36,7 @@ data_dst_file_trunc=tdata_trunc.$(otype)
 topN=40
 
 $(eval now_date=$(shell date +%Y%m%d))
+$(eval hname=$(shell hostname))
 
 t1:
 	@printf "hostname: $(shell hostname)\n"
@@ -55,19 +56,19 @@ run_trunc:
 	$(p3) ./gentset.py -d $(data_src_dir) --write --oname $(data_dst_dir)/$(data_dst_file_trunc) --trunc 1000
 
 run_save_by_dir:
-	$(p3) ./gentset.py -d $(all_data_src_dir) --write --oname $(data_dst_dir)/tdata --save_by_dir --otype $(otype)
+	$(p3) ./gentset.py -d $(all_data_src_dir) --write --oname $(data_dst_dir)/$(hname)_tdata --save_by_dir --otype $(otype)
 
 run_save_by_dir_preproc:
-	$(p3) ./gentset.py -d $(all_data_src_dir) --write --oname $(data_dst_dir)/tdata_top$(topN)_ --save_by_dir --preproc --class_sample_thresh $(topN) --otype $(otype) --logfile gentset.log
+	$(p3) ./gentset.py -d $(all_data_src_dir) --write --oname $(data_dst_dir)/$(hname)_tdata_top$(topN)_ --save_by_dir --preproc --class_sample_thresh $(topN) --otype $(otype) --logfile gentset.log
 
 run_preproc_agg:
-	$(p3) ./gentset.py -d $(all_data_src_dir) --write --oname $(data_dst_dir)/tdata_agg_top$(topN)_$(date_str).$(otype) --preproc --agg --class_sample_thresh $(topN) --logfile gentset_agg.log
+	$(p3) ./gentset.py -d $(all_data_src_dir) --write --oname $(data_dst_dir)/$(hname)_tdata_agg_top$(topN)_$(date_str).$(otype) --preproc --agg --class_sample_thresh $(topN) --logfile gentset_agg.log
 
 run_preproc_agg_now:
-	$(p3) ./gentset.py -d $(all_data_src_dir) --write --oname $(data_dst_dir)/tdata_agg_top$(topN)_$(now_date).$(otype) --preproc --agg --class_sample_thresh $(topN) --logfile gentset_agg.log
+	$(p3) ./gentset.py -d $(all_data_src_dir) --write --oname $(data_dst_dir)/$(hname)_tdata_agg_top$(topN)_$(now_date).$(otype) --preproc --agg --class_sample_thresh $(topN) --logfile gentset_agg.log
 
 run_preproc_agg_now_all:
-	$(p3) ./gentset.py -d $(all_data_src_dir) --write --oname $(data_dst_dir)/tdata_agg_all_$(now_date).$(otype) --preproc --agg --logfile gentset_agg.log
+	$(p3) ./gentset.py -d $(all_data_src_dir) --write --oname $(data_dst_dir)/$(hname)_tdata_agg_all_$(now_date).$(otype) --preproc --agg --logfile gentset_agg.log
 
 test: run_preproc_agg run_save_by_dir_preproc
 
