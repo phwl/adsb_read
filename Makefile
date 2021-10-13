@@ -21,6 +21,7 @@ run_log= $(topdir)/adsb_read_$(now_date).log
 $(eval user=$(shell whoami))
 
 $(eval most_recent_data_dir=$(shell ls -d $(topdir)/*/ | tail -1))
+$(eval pidstr=$(shell pgrep -a python3 | grep adsb_read))
 
 p= python3
 
@@ -31,9 +32,21 @@ t1:
 	@printf "now_datadir: $(now_datadir)\n"
 	@printf "run_log: $(run_log)\n"
 
+pid:
+	@if [ "$(pidstr)" != "" ]; then \
+		printf "PID of running adsb_read.py process: "; \
+		echo $(pidstr) | sed "s/ python3.*$$//"; \
+	else \
+		printf "Not running!\n"; \
+	fi \
+
 status:
-	@printf "PID of running adsb_read.py process: "
-	@pgrep -a python3 | grep adsb_read | sed "s/ python3.*$$//"
+	@if [ "$(pidstr)" != "" ]; then \
+		printf "PID of running adsb_read.py process: "; \
+		echo $(pidstr) | sed "s/ python3.*$$//"; \
+	else \
+		printf "Not running!\n"; \
+	fi	
 	@if [ -d $(topdir)/$(now_date) ]; then \
 		printf "Files in current capture $(topdir)/$(now_date) = "; \
 		ls $(topdir)/$(now_date) | wc -w; \
