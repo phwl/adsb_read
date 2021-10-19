@@ -69,7 +69,7 @@ class SDRFileReader(object):
         self.ifile = self.args.ifile
         self.tfile = self.args.tfile
         if self.ifile == None:
-            self.sdr = adi.Pluto("ip:pluto.local")
+            self.sdr = adi.Pluto(self.args.device)
         elif self.ifile == '-':
             self.fd = open(0, 'rb')
         else:
@@ -375,6 +375,8 @@ if __name__ == "__main__":
                         help='Upsample factor')
     parser.add_argument('-d', '--downsample', type=int, default=1, 
                         help='Downsample factor')
+    parser.add_argument('-D', '--device', action='store', 
+                        default='ip:pluto.local', help='pluto device name')
     args = parser.parse_args()
 
 
