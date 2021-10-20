@@ -21,7 +21,7 @@ run_log= $(topdir)/adsb_read_$(now_date).log
 $(eval user=$(shell whoami))
 
 $(eval most_recent_data_dir=$(shell ls -d $(topdir)/*/ | tail -1))
-$(eval pidstr=$(shell pgrep -a python3 | grep adsb_read))
+$(eval pidstr=$(shell pgrep -a python3 | grep adsb_read | sed "s/ python3.*$$//"))
 
 p= python3
 
@@ -35,15 +35,24 @@ t1:
 pid:
 	@if [ "$(pidstr)" != "" ]; then \
 		printf "PID of running adsb_read.py process: "; \
-		echo $(pidstr) | sed "s/ python3.*$$//"; \
+		echo $(pidstr); \
 	else \
 		printf "Not running!\n"; \
 	fi \
 
+kill:
+	@if [ "$(pidstr)" != "" ]; then \
+		printf "killing PID of running adsb_read.py process: "; \
+		echo $(pidstr); \
+		kill -9 $(pidstr); \
+	else \
+		printf "Not running!\n"; \
+	fi	
+	
 status:
 	@if [ "$(pidstr)" != "" ]; then \
 		printf "PID of running adsb_read.py process: "; \
-		echo $(pidstr) | sed "s/ python3.*$$//"; \
+		echo $(pidstr); \
 	else \
 		printf "Not running!\n"; \
 	fi	
@@ -70,6 +79,8 @@ gentset_all:
 run: run_pluto
 
 now: run_pluto_now
+
+restart: kill run_pluto_now
 
 run_pluto:
 	$(p) adsb_read.py -v --osr 4 -t $(datadir)
